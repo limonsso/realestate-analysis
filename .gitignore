@@ -1,0 +1,79 @@
+# Python-related
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.manifest
+*.spec
+
+# Environment-related
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+*.env
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints/
+
+# Jupyter Notebook metadata
+*.nbconvert/
+*.nb.html
+
+# Machine learning artifacts
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.csv
+*.tsv
+*.parquet
+*.pickle
+*.joblib
+
+# Logs and cache
+*.log
+*.out
+*.err
+*.snm
+*.synctex.gz
+*.blg
+*.bbl
+*.aux
+*.log
+*.lot
+*.fls
+*.fdb_latexmk
+*.backup
+*.toc
+.cache/
+*.~lock.*
+.DS_Store
+
+# Byte-compiled or compiled files
+*.class
+*.jks
+*.pem
+*.crt
+*.key
+
+# VSCode files
+.vscode/
+.history/
+
+# PyCharm files
+.idea/
+
+# System-specific files
+Thumbs.db
+Desktop.ini
+*.bak
+*.swp
+*.swo
