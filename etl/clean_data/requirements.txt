@@ -1,0 +1,37 @@
+# 🧹 Dépendances pour le Nettoyage Expert du Dataset Immobilier
+# =============================================================
+
+# Core Data Science
+pandas>=1.5.0
+numpy>=1.21.0
+pyarrow>=10.0.0  # Pour le format Parquet
+
+# Géospatial
+geopandas>=0.12.0
+folium>=0.14.0
+geopy>=2.3.0
+
+# Visualisation
+matplotlib>=3.5.0
+seaborn>=0.11.0
+plotly>=5.0.0
+
+# Statistiques et Machine Learning
+scipy>=1.9.0
+scikit-learn>=1.1.0
+
+# Excel et JSON
+openpyxl>=3.0.0
+xlrd>=2.0.0
+
+# MongoDB (optionnel)
+pymongo>=4.0.0
+
+# Utilitaires
+python-dateutil>=2.8.0
+tqdm>=4.64.0  # Barres de progression
+
+# Jupyter (pour le notebook)
+jupyter>=1.0.0
+ipykernel>=6.0.0
+

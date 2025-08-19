@@ -1,0 +1,58 @@
+{
+  "name": "real-estate-intelligence-premium",
+  "version": "1.0.0",
+  "description": "Plateforme d'Intelligence Immobilière Premium - L'Outil du Millionaire Immobilier",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "dev": "react-scripts start",
+    "preview": "serve -s build -l 3000"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "^5.0.1",
+    "recharts": "^2.8.0",
+    "react-leaflet": "^4.2.1",
+    "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
+    "react-table": "^7.8.0",
+    "react-select": "^5.7.0",
+    "styled-components": "^6.0.7",
+    "framer-motion": "^10.16.4",
+    "lucide-react": "^0.263.1",
+    "axios": "^1.5.0",
+    "react-hot-toast": "^2.4.1",
+    "react-intersection-observer": "^9.5.2",
+    "react-countup": "^6.4.2",
+    "react-spring": "^9.7.3",
+    "react-use": "^17.4.0",
+    "date-fns": "^2.30.0",
+    "lodash": "^4.17.21",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-window": "^1.8.8",
+    "react-virtualized-auto-sizer": "^1.0.20"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@types/leaflet": "^1.9.8",
+    "@types/lodash": "^4.14.202",
+    "serve": "^14.2.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
