@@ -102,3 +102,18 @@ secrets.py
 etl/clean_data/__pycache__/
 etl/clean_data/*.log
 etl/clean_data/*.tmp
+
+## 🌐 **Node.js et dépendances**
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+## 📁 **Dossiers de build et publics**
+public/
+*/public/
+build/
+dist/
