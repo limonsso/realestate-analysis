@@ -1,276 +1,263 @@
-# 🧹 NETTOYAGE EXPERT DU DATASET IMMOBILIER
+# 🧹 Projet de Nettoyage Immobilier Québécois
 
-## 🎯 Vue d'ensemble
+## 🎯 **Mission**
 
-Ce dossier contient un système complet de nettoyage de données immobilières selon les spécifications détaillées dans `real_estate_prompt.md`. Le système implémente un pipeline en 5 phases pour transformer des données brutes en un dataset premium prêt pour l'analyse d'investissement.
+Transformer des données immobilières brutes en une base de données premium prête pour l'analyse d'investissement, en appliquant les meilleures pratiques de data cleaning avec une approche méthodique et intelligente.
 
-## 🚀 Installation et Configuration
+## 🏗️ **Architecture Modulaire**
 
-### 📦 Dépendances requises
+Ce projet utilise une architecture modulaire professionnelle organisée en composants spécialisés :
+
+```
+etl/clean_data/
+├── 🧩 src/                          # Code source modulaire
+│   ├── core/                        # Composants principaux
+│   ├── exporters/                   # Gestion de l'export
+│   ├── validators/                  # Validation des données
+│   └── utils/                       # Utilitaires réutilisables
+├── 📥 inputs/                       # Données d'entrée
+├── 📤 outputs/                      # Résultats organisés
+├── 🧪 tests/                        # Tests unitaires
+├── 📋 docs/                         # Documentation complète
+└── 🚀 main.py                       # Point d'entrée unique
+```
+
+## 🛠️ **Stack Technologique**
+
+### 📊 **Python - Écosystème Data Science**
+
+- **Pandas** : DataFrames et manipulation des données
+- **NumPy** : Calculs numériques et arrays
+- **GeoPandas** : Manipulation de données géographiques
+- **Folium** : Cartes interactives
+- **Geopy** : Géocodage et calculs géographiques
+
+### 📈 **Analyse & Visualisation**
+
+- **Matplotlib** : Graphiques de base
+- **Seaborn** : Visualisations statistiques avancées
+- **Plotly** : Graphiques interactifs premium
+
+### 🔍 **Détection Outliers & Anomalies**
+
+- **SciPy Stats** : Tests statistiques et détection anomalies
+- **Scikit-learn** : Algorithmes de détection d'outliers
+- **StandardScaler/RobustScaler** : Normalisation des données
+
+## 🔄 **Pipeline de Nettoyage (5 Phases)**
+
+### 🔍 **Phase 1: Audit & Diagnostic Complet**
+
+- Analyse exploratoire avec Pandas/Seaborn
+- Matrice des valeurs manquantes
+- Détection d'outliers avec IsolationForest
+- Analyse des corrélations
+
+### 🛠️ **Phase 2: Nettoyage Intelligent**
+
+- Standardisation des noms de colonnes
+- Consolidation des colonnes redondantes
+- Nettoyage des variables financières
+- Nettoyage des caractéristiques physiques
+- Filtrage géographique
+
+### ⚡ **Phase 3: Enrichissement Intelligent**
+
+- Création de métriques financières (ROI, prix/pi²)
+- Création de métriques physiques (âge bâtiment)
+- Catégorisation et segmentation
+- Score de complétude des données
+
+### 🚨 **Phase 4: Validation & Contrôle Qualité**
+
+- Tests automatiques de cohérence
+- Validation des métriques financières
+- Contrôle de la géolocalisation
+- Rapport de qualité détaillé
+
+### 🎯 **Phase 5: Préparation pour l'Analyse**
+
+- Optimisation de la structure finale
+- Export multi-format (CSV, Parquet, JSON, GeoJSON)
+- Documentation des métadonnées
+
+## 🚀 **Utilisation Rapide**
+
+### 📋 **Installation**
 
 ```bash
-# Installer les dépendances Python
+# Cloner le projet
+git clone <repository-url>
+cd etl/clean_data
+
+# Installer les dépendances
 pip install -r requirements.txt
-
-# Ou installer manuellement les packages principaux
-pip install pandas numpy geopandas pyarrow openpyxl plotly seaborn matplotlib scipy scikit-learn
 ```
 
-### 🔧 Structure des fichiers
+### 🔧 **Exécution**
 
+```bash
+# Mode complet (par défaut)
+python main.py
+
+# Mode simple
+python main.py --mode simple
+
+# Fichier personnalisé
+python main.py --input inputs/mon_fichier.csv
 ```
-clean_data/
-├── real_estate_prompt.md          # Spécifications détaillées
-├── real_estate_data_cleaning.py   # Script principal de nettoyage
-├── real_estate_cleaning_notebook.ipynb  # Notebook Jupyter interactif
-├── test_cleaning.py               # Script de test avec données d'exemple
-├── requirements.txt                # Dépendances Python
-└── README.md                      # Ce fichier
-```
 
-## 🎯 Phases du Pipeline de Nettoyage
-
-### 🔍 Phase 1: Audit & Diagnostic Complet
-- **Analyse exploratoire** des dimensions et types de données
-- **Détection des valeurs manquantes** avec visualisations
-- **Identification des colonnes problématiques** (doublons, incohérences)
-- **Statistiques descriptives** de base
-
-### 🛠️ Phase 2: Nettoyage Intelligent
-- **Standardisation des noms** de colonnes en snake_case
-- **Consolidation des colonnes redondantes** (revenus, dates, surfaces)
-- **Nettoyage des variables financières** (prix, taxes, évaluations)
-- **Nettoyage des caractéristiques physiques** (surfaces, chambres, années)
-- **Validation de la géolocalisation** (coordonnées Québec)
-- **Élimination des doublons** intelligente
-
-### ⚡ Phase 3: Enrichissement Intelligent
-- **Métriques financières calculées** (ROI, prix/pi², plus-value potentielle)
-- **Métriques physiques** (âge du bâtiment, ratios)
-- **Catégorisation automatique** (segments de prix, classes ROI)
-- **Score de complétude** des données par propriété
-
-### 🚨 Phase 4: Validation & Contrôle Qualité
-- **Tests de cohérence financière** (ROI réaliste, écarts prix/évaluation)
-- **Validation des caractéristiques physiques** (surfaces positives, âges logiques)
-- **Contrôle de la géolocalisation** (dans les limites du Québec)
-- **Tests généraux** de cohérence
-
-### 🎯 Phase 5: Préparation pour l'Analyse
-- **Structure finale optimisée** par catégories
-- **Export multi-format** (Parquet, CSV, JSON, GeoJSON)
-- **Rapport de qualité** détaillé
-- **Préparation pour cartes interactives**
-
-## 🚀 Utilisation
-
-### 📊 Utilisation via Script Python
+### 🔧 **Utilisation Programmée**
 
 ```python
-from real_estate_data_cleaning import RealEstateDataCleaner
+from src.core import RealEstateDataCleaner
+from src.exporters import DataExporter
+from src.validators import DataValidator
 
 # Créer le nettoyeur
-cleaner = RealEstateDataCleaner(input_file="votre_dataset.csv")
+cleaner = RealEstateDataCleaner("inputs/data.csv")
 
 # Exécuter le pipeline complet
-success = cleaner.run_complete_cleaning_pipeline()
-
-if success:
-    # Récupérer les données nettoyées
-    cleaned_data = cleaner.get_cleaned_data()
-    
-    # Récupérer le rapport de qualité
-    quality_report = cleaner.get_quality_report()
-    
-    print(f"✅ Nettoyage terminé: {len(cleaned_data)} propriétés")
+if cleaner.run_complete_cleaning_pipeline():
+    print("✅ Pipeline terminé avec succès!")
 ```
 
-### 🎮 Utilisation via Ligne de Commande
+## 📊 **Formats de Sortie Supportés**
+
+| Format      | Extension  | Usage                            | Avantages             |
+| ----------- | ---------- | -------------------------------- | --------------------- |
+| **CSV**     | `.csv`     | Compatibilité universelle, Excel | Standard, lisible     |
+| **Parquet** | `.parquet` | Performance Python, pandas       | Compression, rapidité |
+| **JSON**    | `.json`    | Applications web, API            | Structuré, flexible   |
+| **GeoJSON** | `.geojson` | Cartes interactives, GIS         | Géospatial, cartes    |
+
+## 🧪 **Tests et Validation**
+
+### ✅ **Tests de Structure**
 
 ```bash
-# Nettoyage d'un fichier CSV
-python real_estate_data_cleaning.py --input votre_dataset.csv
-
-# Nettoyage avec MongoDB
-python real_estate_data_cleaning.py --mongodb "mongodb://localhost:27017/"
-
-# Spécifier le répertoire de sortie
-python real_estate_data_cleaning.py --input votre_dataset.csv --output-dir ./resultats
+python tests/test_organized_structure.py
 ```
 
-### 📓 Utilisation via Notebook Jupyter
-
-1. Ouvrir `real_estate_cleaning_notebook.ipynb`
-2. Exécuter les cellules dans l'ordre
-3. Suivre le pipeline étape par étape
-4. Visualiser les résultats et la qualité des données
-
-## 🧪 Tests et Validation
-
-### 🔬 Test avec Données d'Exemple
+### ✅ **Tests de Nettoyage**
 
 ```bash
-# Exécuter les tests complets
-python test_cleaning.py
-
-# Ou tester individuellement
-python -c "
-from test_cleaning import test_individual_phases, test_cleaning_pipeline
-test_individual_phases()
-test_cleaning_pipeline()
-"
+python tests/test_cleaning.py
 ```
 
-### ✅ Validation des Résultats
+### ✅ **Validation des Spécifications**
 
-Le système génère automatiquement :
-- **Fichiers de données nettoyés** dans plusieurs formats
-- **Rapport de qualité** détaillé
-- **Logs de validation** pour chaque phase
-- **Métriques de performance** (temps, mémoire, taux de succès)
+```bash
+python validate_specifications.py
+```
 
-## 📊 Formats de Sortie
+## 📁 **Organisation des Dossiers**
 
-### 💾 Fichiers Générés
+### 📥 **Inputs**
 
-1. **`real_estate_cleaned_YYYYMMDD_HHMMSS.parquet`**
-   - Format optimisé pour Python (pandas, dask)
-   - Performance maximale pour gros datasets
+- Placez vos fichiers CSV/Excel dans le dossier `inputs/`
+- Le script détecte automatiquement `sample_real_estate_data.csv`
 
-2. **`real_estate_cleaned_YYYYMMDD_HHMMSS.csv`**
-   - Compatibilité universelle
-   - Ouverture dans Excel, Google Sheets, etc.
+### 📤 **Outputs**
 
-3. **`real_estate_cleaned_YYYYMMDD_HHMMSS.json`**
-   - Pour applications web
-   - API et intégrations
+- **Données nettoyées** : `outputs/cleaned_data/`
+- **Rapports de qualité** : `outputs/reports/`
+- **Logs d'exécution** : `outputs/logs/`
 
-4. **`real_estate_cleaned_YYYYMMDD_HHMMSS.geojson`**
-   - Cartes interactives (Folium, Mapbox)
-   - Analyses géospatiales
+## 🔧 **Configuration**
 
-5. **`quality_report_YYYYMMDD_HHMMSS.json`**
-   - Rapport détaillé de la qualité
-   - Métriques et statistiques
-
-## 🔧 Personnalisation
-
-### ⚙️ Configuration des Seuils
+### ⚙️ **Chemins Automatiques**
 
 ```python
-# Modifier les seuils de validation dans la classe
-class RealEstateDataCleaner:
-    def __init__(self):
-        # Seuils personnalisables
-        self.roi_min = 0      # ROI minimum acceptable
-        self.roi_max = 50      # ROI maximum acceptable
-        self.price_eval_tolerance = 50  # Tolérance écart prix/évaluation (%)
-        self.geo_bounds = {    # Limites géographiques
-            'longitude': (-80, -55),
-            'latitude': (45, 63)
-        }
+from src.core.config import ensure_directories
+
+# Création automatique des dossiers
+ensure_directories()
+
+# Chemins configurés
+INPUT_DIR = Path("inputs")
+OUTPUT_DIR = Path("outputs")
+CLEANED_DATA_DIR = OUTPUT_DIR / "cleaned_data"
+REPORTS_DIR = OUTPUT_DIR / "reports"
+LOGS_DIR = OUTPUT_DIR / "logs"
 ```
 
-### 🎨 Ajout de Nouvelles Métriques
+## 📋 **Colonnes Supportées**
 
-```python
-def _create_custom_metrics(self):
-    """Ajouter vos propres métriques calculées"""
-    
-    # Exemple: Score d'investissement personnalisé
-    if all(col in self.df_cleaned.columns for col in ['roi_brut', 'plus_value_potential']):
-        self.df_cleaned['investment_score'] = (
-            self.df_cleaned['roi_brut'] * 0.6 + 
-            self.df_cleaned['plus_value_potential'] * 0.4
-        )
-```
+### 🏷️ **Identifiants**
 
-## 📈 Intégration avec le Dashboard
+- `_id`, `link`, `company`, `version`, `created_at`, `updated_at`
 
-### 🔗 Connexion au Dashboard Existant
+### 📍 **Localisation**
 
-```python
-# Après nettoyage, charger dans le dashboard
-cleaned_data = cleaner.get_cleaned_data()
+- `address`, `full_address`, `city`, `region`, `longitude`, `latitude`
 
-# Sauvegarder dans le format attendu par le dashboard
-cleaned_data.to_csv('../dashboard/src/data/cleaned_properties.csv', index=False)
+### 💰 **Prix & Évaluations**
 
-# Ou exporter en JSON pour l'API
-cleaned_data.to_json('../dashboard/src/data/cleaned_properties.json', orient='records')
-```
+- `price`, `price_assessment`, `municipal_evaluation_total`
 
-### 🗺️ Utilisation des Données Géospatiales
+### 💵 **Revenus**
 
-```python
-# Créer une carte interactive avec Folium
-import folium
+- `revenu`, `plex_revenue`, `potential_gross_revenue`
 
-# Filtrer les propriétés avec coordonnées valides
-geo_data = cleaned_data.dropna(subset=['longitude', 'latitude'])
+### 🏠 **Caractéristiques**
 
-# Créer la carte
-m = folium.Map(location=[46.8139, -71.2080], zoom_start=8)
+- `surface`, `bedrooms`, `bathrooms`, `construction_year`
 
-# Ajouter les propriétés
-for idx, row in geo_data.iterrows():
-    folium.Marker(
-        [row['latitude'], row['longitude']],
-        popup=f"Prix: ${row['price']:,}<br>ROI: {row['roi_brut']:.1f}%"
-    ).add_to(m)
+## 🎯 **Fonctionnalités Avancées**
 
-m.save('carte_proprietes.html')
-```
+### 🔍 **Détection d'Opportunités**
 
-## 🚨 Dépannage
+- **Sous-évaluations** : Prix < évaluation municipale
+- **Anomalies suspectes** : Données nécessitant validation
+- **Patterns géographiques** : Zones à forte performance
 
-### ❌ Problèmes Courants
+### 📊 **Métriques Calculées**
 
-1. **Erreur d'import des modules**
-   ```bash
-   pip install -r requirements.txt
-   ```
+- **ROI brut/net** : Retour sur investissement
+- **Prix/pi²** : Ratio prix sur surface
+- **Potentiel plus-value** : Écart évaluation/prix
+- **Âge bâtiment** : Différence avec année actuelle
 
-2. **Données manquantes ou corrompues**
-   - Vérifier le format du fichier d'entrée
-   - Utiliser le mode verbose pour plus de détails
+## 🔮 **Extensions Futures**
 
-3. **Erreurs de géolocalisation**
-   - Vérifier que les coordonnées sont numériques
-   - Ajuster les limites géographiques si nécessaire
+### 📊 **Nouveaux Exporteurs**
 
-4. **Problèmes de mémoire**
-   - Utiliser le format Parquet pour de gros datasets
-   - Traiter par chunks si nécessaire
+- Export vers bases de données
+- Intégration avec APIs
+- Formats spécialisés
 
-### 📞 Support
+### 🔍 **Nouveaux Validateurs**
 
-Pour toute question ou problème :
-1. Vérifier les logs d'erreur détaillés
-2. Consulter le fichier de spécifications `real_estate_prompt.md`
-3. Exécuter les tests avec `test_cleaning.py`
-4. Vérifier la compatibilité des versions Python
+- Validation métier spécifique
+- Règles personnalisées
+- Intégration avec systèmes externes
 
-## 🎯 Prochaines Étapes
+### 🛠️ **Nouveaux Utilitaires**
 
-### 🚀 Améliorations Futures
+- Traitement de texte avancé
+- Analyse géospatiale
+- Machine Learning
 
-1. **Intégration MongoDB native** pour chargement direct
-2. **Pipeline automatisé** avec DVC (Data Version Control)
-3. **Interface web** pour configuration et monitoring
-4. **Machine Learning** pour détection automatique d'anomalies
-5. **API REST** pour intégration avec d'autres systèmes
+## 📚 **Documentation**
 
-### 📊 Analyses Avancées
+- **📋 ARCHITECTURE.md** : Documentation de l'architecture modulaire
+- **📋 STRUCTURE.md** : Guide de la structure organisée
+- **📋 REORGANISATION_SUMMARY.md** : Résumé de la réorganisation
 
-1. **Modèles de prédiction** de prix et ROI
-2. **Clustering géographique** des quartiers
-3. **Analyse temporelle** des tendances du marché
-4. **Optimisation de portefeuille** immobilier
+## 👥 **Contribution**
+
+Ce projet suit les meilleures pratiques de développement :
+
+- **Architecture modulaire** et extensible
+- **Tests unitaires** pour chaque composant
+- **Documentation complète** et maintenue
+- **Code réutilisable** et maintenable
+
+## 🏆 **Objectif Final**
+
+Un dataset premium, traité avec les meilleures technologies Python, **fiable à 99%**, prêt pour des analyses d'investissement de niveau professionnel !
 
 ---
 
-**🎉 Votre dataset immobilier est maintenant prêt pour des analyses d'investissement de niveau professionnel !**
-
-*Développé selon les spécifications du fichier `real_estate_prompt.md` avec les meilleures pratiques de data science.*
-
+_Projet créé le 19 août 2025 - Équipe de nettoyage immobilier québécois_ 🏠✨
