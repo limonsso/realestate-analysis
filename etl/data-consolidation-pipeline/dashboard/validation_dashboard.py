@@ -136,7 +136,7 @@ class ValidationDashboard:
         logger.info("✅ Dashboard qualité créé avec succès")
         return dashboard
     
-    def _create_completeness_chart(self, df: pd.DataFrame) -> go.Figure:
+    def _create_completeness_chart(self, df: pd.DataFrame):
         """Crée un graphique de complétude des données"""
         completeness = (1 - df.isna().sum() / len(df)) * 100
         
@@ -164,7 +164,7 @@ class ValidationDashboard:
         
         return fig
     
-    def _create_value_distribution_chart(self, df: pd.DataFrame) -> go.Figure:
+    def _create_value_distribution_chart(self, df: pd.DataFrame):
         """Crée un graphique de distribution des valeurs"""
         # Sélection des colonnes numériques
         numeric_cols = df.select_dtypes(include=[np.number]).columns[:6]  # Limite à 6 colonnes
@@ -200,7 +200,7 @@ class ValidationDashboard:
         
         return fig
     
-    def _create_quality_metrics_chart(self, quality_metrics: Dict) -> go.Figure:
+    def _create_quality_metrics_chart(self, quality_metrics: Dict):
         """Crée un graphique des métriques de qualité"""
         if not quality_metrics:
             return go.Figure().add_annotation(
@@ -244,7 +244,7 @@ class ValidationDashboard:
         
         return fig
     
-    def _create_anomaly_analysis_chart(self, df: pd.DataFrame) -> go.Figure:
+    def _create_anomaly_analysis_chart(self, df: pd.DataFrame):
         """Crée un graphique d'analyse des anomalies"""
         # Sélection des colonnes numériques pour l'analyse des outliers
         numeric_cols = df.select_dtypes(include=[np.number]).columns[:3]  # Limite à 3 colonnes

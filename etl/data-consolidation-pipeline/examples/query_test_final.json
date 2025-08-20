@@ -1,0 +1,7 @@
+{
+  "city": "Trois-Rivières",
+  "type": {
+    "$regex": "triplex",
+    "$options": "i"
+  }
+}
