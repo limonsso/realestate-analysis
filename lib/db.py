@@ -50,6 +50,7 @@ def read_mongodb_to_dataframe(
         db: str,
         collection: str,
         query: Dict = {},
+        limit: int = 100,
         host: str = 'localhost',
         port: int = 27017,
         username: Optional[str] = None,
@@ -78,6 +79,7 @@ def read_mongodb_to_dataframe(
             db=db,
             collection=collection,
             query=query,
+            limit=limit,
             host=host,
             port=port,
             username=username,
@@ -106,6 +108,7 @@ def read_mongodb(
         db: str,
         collection: str,
         query: Dict = {},
+        limit: int = 100,
         host: str = 'localhost',
         port: int = 27017,
         username: Optional[str] = None,
@@ -136,8 +139,8 @@ def read_mongodb(
             db=db
         )
 
-        # Query the collection
-        cursor = mongo_db[collection].find(query)
+        # Exécution de la requête
+        cursor = collection.find(query).limit(limit) if limit else collection.find(query)
         result = list(cursor)
 
         logger.info(f"Successfully read {len(result)} documents from {db}.{collection}")

@@ -5,12 +5,21 @@ etl/clean_data/outputs/
 etl/clean_data/outputs/cleaned_data/
 etl/clean_data/outputs/reports/
 etl/clean_data/outputs/logs/
+etl/clean_data/exports/
+etl/clean_data/exports/*/
+etl/clean_data/logs/
+etl/clean_data/logs/*/
+etl/clean_data/backup/
+etl/clean_data/backup/*/
 
 ## 🗂️ **Données temporaires**
 *.tmp
 *.temp
 *.cache
 *.log
+*.log.*
+pipeline.log
+etl/clean_data/pipeline.log
 
 ## 🐍 **Python**
 __pycache__/
@@ -57,6 +66,12 @@ venv.bak/
 *.tar.gz
 *.rar
 
+# Exceptions pour les fichiers de configuration et exemples
+!etl/clean_data/examples/*.json
+!etl/clean_data/config/*.json
+!etl/clean_data/config/*.yaml
+!etl/clean_data/config/*.yml
+
 ## 🖥️ **Système**
 .DS_Store
 .DS_Store?
@@ -78,6 +93,17 @@ Thumbs.db
 *.backup
 *~
 
+## 📊 **Rapports et sauvegardes du pipeline**
+etl/clean_data/exports/*_report_*.md
+etl/clean_data/exports/*_report_*.txt
+etl/clean_data/exports/*_report_*.csv
+etl/clean_data/backup/*_report_*.md
+etl/clean_data/backup/*_report_*.txt
+etl/clean_data/backup/*_report_*.csv
+etl/clean_data/logs/*_report_*.md
+etl/clean_data/logs/*_report_*.txt
+etl/clean_data/logs/*_report_*.csv
+
 ## 🧪 **Tests et couverture**
 .coverage
 .pytest_cache/
@@ -88,6 +114,14 @@ coverage.xml
 *.cover
 .hypothesis/
 
+## 🧪 **Tests et fichiers temporaires du pipeline**
+etl/clean_data/test_*.py
+etl/clean_data/debug_*.py
+etl/clean_data/temp_*.py
+etl/clean_data/*_test.py
+etl/clean_data/test_*.ipynb
+etl/clean_data/debug_*.ipynb
+
 ## 📊 **Jupyter**
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
@@ -97,11 +131,32 @@ config.local.py
 secrets.py
 .env.local
 .env.production
+.env.*
+*.env
+
+## 🔐 **Configuration locale du pipeline**
+etl/clean_data/config/local_*.py
+etl/clean_data/config/*.local.py
+etl/clean_data/config/secrets.py
+etl/clean_data/config/local_config.py
+etl/clean_data/.env
+etl/clean_data/.env.*
 
 ## 📁 **Dossiers spécifiques au projet**
 etl/clean_data/__pycache__/
 etl/clean_data/*.log
 etl/clean_data/*.tmp
+etl/clean_data/data/
+etl/clean_data/data/*/
+etl/clean_data/tests/__pycache__/
+etl/clean_data/core/__pycache__/
+etl/clean_data/config/__pycache__/
+etl/clean_data/validation/__pycache__/
+etl/clean_data/intelligence/__pycache__/
+etl/clean_data/performance/__pycache__/
+etl/clean_data/export/__pycache__/
+etl/clean_data/utils/__pycache__/
+etl/clean_data/dashboard/__pycache__/
 
 ## 🌐 **Node.js et dépendances**
 node_modules/
@@ -117,3 +172,33 @@ public/
 */public/
 build/
 dist/
+
+## 🗄️ **Pipeline ETL - Données et cache**
+etl/clean_data/exports/*/
+etl/clean_data/logs/*/
+etl/clean_data/backup/*/
+etl/clean_data/data/*/
+etl/clean_data/tests/__pycache__/
+etl/clean_data/core/__pycache__/
+etl/clean_data/config/__pycache__/
+etl/clean_data/validation/__pycache__/
+etl/clean_data/intelligence/__pycache__/
+etl/clean_data/performance/__pycache__/
+etl/clean_data/export/__pycache__/
+etl/clean_data/utils/__pycache__/
+etl/clean_data/dashboard/__pycache__/
+
+## 📊 **Fichiers de données volumineux (avec exceptions)**
+# Ignorer tous les fichiers de données sauf les exemples et configs
+etl/clean_data/exports/*.csv
+etl/clean_data/exports/*.parquet
+etl/clean_data/exports/*.json
+etl/clean_data/exports/*.geojson
+etl/clean_data/exports/*.h5
+etl/clean_data/exports/*.hdf5
+
+# Garder les fichiers d'exemple et de configuration
+!etl/clean_data/examples/*.json
+!etl/clean_data/config/*.json
+!etl/clean_data/config/*.yaml
+!etl/clean_data/config/*.yml

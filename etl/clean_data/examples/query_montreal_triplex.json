@@ -1,0 +1,10 @@
+{
+    "city": {
+        "$regex": "Montréal",
+        "$options": "i"
+    },
+    "type": {
+        "$regex": "triplex",
+        "$options": "i"
+    }
+}
