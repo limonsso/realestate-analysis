@@ -1,16 +1,16 @@
 # 🚫 Fichiers et dossiers à ignorer dans Git
 
 ## 📤 **Sorties et résultats**
-etl/clean_data/outputs/
-etl/clean_data/outputs/cleaned_data/
-etl/clean_data/outputs/reports/
-etl/clean_data/outputs/logs/
-etl/clean_data/exports/
-etl/clean_data/exports/*/
-etl/clean_data/logs/
-etl/clean_data/logs/*/
-etl/clean_data/backup/
-etl/clean_data/backup/*/
+etl/data-consolidation-pipeline/outputs/
+etl/data-consolidation-pipeline/outputs/cleaned_data/
+etl/data-consolidation-pipeline/outputs/reports/
+etl/data-consolidation-pipeline/outputs/logs/
+etl/data-consolidation-pipeline/exports/
+etl/data-consolidation-pipeline/exports/*/
+etl/data-consolidation-pipeline/logs/
+etl/data-consolidation-pipeline/logs/*/
+etl/data-consolidation-pipeline/backup/
+etl/data-consolidation-pipeline/backup/*/
 
 ## 🗂️ **Données temporaires**
 *.tmp
@@ -19,7 +19,7 @@ etl/clean_data/backup/*/
 *.log
 *.log.*
 pipeline.log
-etl/clean_data/pipeline.log
+etl/data-consolidation-pipeline/pipeline.log
 
 ## 🐍 **Python**
 __pycache__/
@@ -67,10 +67,10 @@ venv.bak/
 *.rar
 
 # Exceptions pour les fichiers de configuration et exemples
-!etl/clean_data/examples/*.json
-!etl/clean_data/config/*.json
-!etl/clean_data/config/*.yaml
-!etl/clean_data/config/*.yml
+!etl/data-consolidation-pipeline/examples/*.json
+!etl/data-consolidation-pipeline/config/*.json
+!etl/data-consolidation-pipeline/config/*.yaml
+!etl/data-consolidation-pipeline/config/*.yml
 
 ## 🖥️ **Système**
 .DS_Store
@@ -94,15 +94,15 @@ Thumbs.db
 *~
 
 ## 📊 **Rapports et sauvegardes du pipeline**
-etl/clean_data/exports/*_report_*.md
-etl/clean_data/exports/*_report_*.txt
-etl/clean_data/exports/*_report_*.csv
-etl/clean_data/backup/*_report_*.md
-etl/clean_data/backup/*_report_*.txt
-etl/clean_data/backup/*_report_*.csv
-etl/clean_data/logs/*_report_*.md
-etl/clean_data/logs/*_report_*.txt
-etl/clean_data/logs/*_report_*.csv
+etl/data-consolidation-pipeline/exports/*_report_*.md
+etl/data-consolidation-pipeline/exports/*_report_*.txt
+etl/data-consolidation-pipeline/exports/*_report_*.csv
+etl/data-consolidation-pipeline/backup/*_report_*.md
+etl/data-consolidation-pipeline/backup/*_report_*.txt
+etl/data-consolidation-pipeline/backup/*_report_*.csv
+etl/data-consolidation-pipeline/logs/*_report_*.md
+etl/data-consolidation-pipeline/logs/*_report_*.txt
+etl/data-consolidation-pipeline/logs/*_report_*.csv
 
 ## 🧪 **Tests et couverture**
 .coverage
@@ -115,12 +115,12 @@ coverage.xml
 .hypothesis/
 
 ## 🧪 **Tests et fichiers temporaires du pipeline**
-etl/clean_data/test_*.py
-etl/clean_data/debug_*.py
-etl/clean_data/temp_*.py
-etl/clean_data/*_test.py
-etl/clean_data/test_*.ipynb
-etl/clean_data/debug_*.ipynb
+etl/data-consolidation-pipeline/test_*.py
+etl/data-consolidation-pipeline/debug_*.py
+etl/data-consolidation-pipeline/temp_*.py
+etl/data-consolidation-pipeline/*_test.py
+etl/data-consolidation-pipeline/test_*.ipynb
+etl/data-consolidation-pipeline/debug_*.ipynb
 
 ## 📊 **Jupyter**
 .ipynb_checkpoints/
@@ -135,28 +135,28 @@ secrets.py
 *.env
 
 ## 🔐 **Configuration locale du pipeline**
-etl/clean_data/config/local_*.py
-etl/clean_data/config/*.local.py
-etl/clean_data/config/secrets.py
-etl/clean_data/config/local_config.py
-etl/clean_data/.env
-etl/clean_data/.env.*
+etl/data-consolidation-pipeline/config/local_*.py
+etl/data-consolidation-pipeline/config/*.local.py
+etl/data-consolidation-pipeline/config/secrets.py
+etl/data-consolidation-pipeline/config/local_config.py
+etl/data-consolidation-pipeline/.env
+etl/data-consolidation-pipeline/.env.*
 
 ## 📁 **Dossiers spécifiques au projet**
-etl/clean_data/__pycache__/
-etl/clean_data/*.log
-etl/clean_data/*.tmp
-etl/clean_data/data/
-etl/clean_data/data/*/
-etl/clean_data/tests/__pycache__/
-etl/clean_data/core/__pycache__/
-etl/clean_data/config/__pycache__/
-etl/clean_data/validation/__pycache__/
-etl/clean_data/intelligence/__pycache__/
-etl/clean_data/performance/__pycache__/
-etl/clean_data/export/__pycache__/
-etl/clean_data/utils/__pycache__/
-etl/clean_data/dashboard/__pycache__/
+etl/data-consolidation-pipeline/__pycache__/
+etl/data-consolidation-pipeline/*.log
+etl/data-consolidation-pipeline/*.tmp
+etl/data-consolidation-pipeline/data/
+etl/data-consolidation-pipeline/data/*/
+etl/data-consolidation-pipeline/tests/__pycache__/
+etl/data-consolidation-pipeline/core/__pycache__/
+etl/data-consolidation-pipeline/config/__pycache__/
+etl/data-consolidation-pipeline/validation/__pycache__/
+etl/data-consolidation-pipeline/intelligence/__pycache__/
+etl/data-consolidation-pipeline/performance/__pycache__/
+etl/data-consolidation-pipeline/export/__pycache__/
+etl/data-consolidation-pipeline/utils/__pycache__/
+etl/data-consolidation-pipeline/dashboard/__pycache__/
 
 ## 🌐 **Node.js et dépendances**
 node_modules/
@@ -174,31 +174,31 @@ build/
 dist/
 
 ## 🗄️ **Pipeline ETL - Données et cache**
-etl/clean_data/exports/*/
-etl/clean_data/logs/*/
-etl/clean_data/backup/*/
-etl/clean_data/data/*/
-etl/clean_data/tests/__pycache__/
-etl/clean_data/core/__pycache__/
-etl/clean_data/config/__pycache__/
-etl/clean_data/validation/__pycache__/
-etl/clean_data/intelligence/__pycache__/
-etl/clean_data/performance/__pycache__/
-etl/clean_data/export/__pycache__/
-etl/clean_data/utils/__pycache__/
-etl/clean_data/dashboard/__pycache__/
+etl/data-consolidation-pipeline/exports/*/
+etl/data-consolidation-pipeline/logs/*/
+etl/data-consolidation-pipeline/backup/*/
+etl/data-consolidation-pipeline/data/*/
+etl/data-consolidation-pipeline/tests/__pycache__/
+etl/data-consolidation-pipeline/core/__pycache__/
+etl/data-consolidation-pipeline/config/__pycache__/
+etl/data-consolidation-pipeline/validation/__pycache__/
+etl/data-consolidation-pipeline/intelligence/__pycache__/
+etl/data-consolidation-pipeline/performance/__pycache__/
+etl/data-consolidation-pipeline/export/__pycache__/
+etl/data-consolidation-pipeline/utils/__pycache__/
+etl/data-consolidation-pipeline/dashboard/__pycache__/
 
 ## 📊 **Fichiers de données volumineux (avec exceptions)**
 # Ignorer tous les fichiers de données sauf les exemples et configs
-etl/clean_data/exports/*.csv
-etl/clean_data/exports/*.parquet
-etl/clean_data/exports/*.json
-etl/clean_data/exports/*.geojson
-etl/clean_data/exports/*.h5
-etl/clean_data/exports/*.hdf5
+etl/data-consolidation-pipeline/exports/*.csv
+etl/data-consolidation-pipeline/exports/*.parquet
+etl/data-consolidation-pipeline/exports/*.json
+etl/data-consolidation-pipeline/exports/*.geojson
+etl/data-consolidation-pipeline/exports/*.h5
+etl/data-consolidation-pipeline/exports/*.hdf5
 
 # Garder les fichiers d'exemple et de configuration
-!etl/clean_data/examples/*.json
-!etl/clean_data/config/*.json
-!etl/clean_data/config/*.yaml
-!etl/clean_data/config/*.yml
+!etl/data-consolidation-pipeline/examples/*.json
+!etl/data-consolidation-pipeline/config/*.json
+!etl/data-consolidation-pipeline/config/*.yaml
+!etl/data-consolidation-pipeline/config/*.yml

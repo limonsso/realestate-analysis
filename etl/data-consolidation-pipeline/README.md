@@ -1,4 +1,4 @@
-# 🚀 PIPELINE ULTRA-INTELLIGENT - Nettoyage et Consolidation de Données Immobilières
+# 🚀 PIPELINE DE CONSOLIDATION DE DONNÉES - Intelligence Artificielle pour l'Harmonisation Immobilière
 
 ## 📁 Structure du Projet
 
@@ -26,10 +26,12 @@ etl/clean_data/
 │   ├── real_estate_prompt.md
 │   ├── CONSOLIDATION_STRATEGY_VALIDATION.md
 │   ├── CUSTOM_CONFIG_HARMONIZATION.md
-│   └── README_FICHIER_JSON.md      ← Guide requêtes MongoDB via JSON
+│   ├── README_FICHIER_JSON.md      ← Guide requêtes MongoDB via JSON
+│   └── GIT_IGNORE_GUIDE.md         ← Guide du fichier .gitignore
 ├── examples/                        ← Exemples de requêtes MongoDB
 │   ├── query_trois_rivieres_triplex.json
-│   └── query_montreal_triplex.json
+│   ├── query_montreal_triplex.json
+│   └── README.md                    ← Guide des exemples
 ├── dashboard/                       ← Dashboard de validation
 ├── export/                          ← Export des données
 ├── intelligence/                    ← Détection de similarités
