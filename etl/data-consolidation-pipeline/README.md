@@ -1,37 +1,34 @@
-# 🚀 PIPELINE DE CONSOLIDATION DE DONNÉES - Intelligence Artificielle pour l'Harmonisation Immobilière
+# 🚀 PIPELINE DE CONSOLIDATION DE DONNÉES - Architecture Modulaire Unifiée
 
 ## 📁 Structure du Projet
 
 ```
-etl/clean_data/
+etl/data-consolidation-pipeline/
 ├── README.md                        ← Documentation principale
 ├── requirements.txt                 ← Dépendances Python
-├── main_ultra_intelligent.py       ← Point d'entrée principal
+├── main_modular_pipeline.py        ← Point d'entrée principal (NOUVEAU)
 ├── config/                          ← Configuration du pipeline
 │   ├── __init__.py
 │   ├── consolidation_config.py      ← Configuration de base (30 groupes)
 │   └── custom_fields_config.py     ← Configuration personnalisée (67 champs)
-├── core/                            ← Logique métier principale
+├── core/                            ← Architecture modulaire principale
 │   ├── __init__.py
-│   └── ultra_intelligent_cleaner.py
+│   ├── pipeline_manager.py          ← Orchestrateur principal intégré
+│   ├── data_processor.py            ← Traitement des données
+│   ├── export_manager.py            ← Gestion des exports
+│   ├── report_generator.py          ← Génération des rapports
+│   ├── config_manager.py            ← Gestion de la configuration
+│   └── components/                  ← Composants spécialisés
+│       ├── data_extractor.py        ← Extraction des données
+│       ├── data_consolidator.py     ← Consolidation intelligente
+│       ├── data_cleaner.py          ← Nettoyage des données
+│       ├── data_enricher.py         ← Enrichissement des données
+│       ├── data_validator.py        ← Validation des données
+│       └── pipeline_orchestrator.py ← Orchestration modulaire
 ├── tests/                           ← Tests de validation
-│   ├── __init__.py
-│   ├── test_consolidation_strategy.py
-│   ├── test_custom_config_integration.py
-│   └── test_new_features.py
 ├── logs/                            ← Fichiers de log
-│   └── pipeline.log
 ├── docs/                            ← Documentation détaillée
-│   ├── INDEX.md
-│   ├── real_estate_prompt.md
-│   ├── CONSOLIDATION_STRATEGY_VALIDATION.md
-│   ├── CUSTOM_CONFIG_HARMONIZATION.md
-│   ├── README_FICHIER_JSON.md      ← Guide requêtes MongoDB via JSON
-│   └── GIT_IGNORE_GUIDE.md         ← Guide du fichier .gitignore
 ├── examples/                        ← Exemples de requêtes MongoDB
-│   ├── query_trois_rivieres_triplex.json
-│   ├── query_montreal_triplex.json
-│   └── README.md                    ← Guide des exemples
 ├── dashboard/                       ← Dashboard de validation
 ├── export/                          ← Export des données
 ├── intelligence/                    ← Détection de similarités
@@ -42,11 +39,34 @@ etl/clean_data/
 
 ## 🎯 Utilisation Recommandée
 
+### **Pipeline Modulaire Unifié (RECOMMANDÉ)**
+
+```bash
+# Utiliser le pipeline modulaire unifié
+python3 main_modular_pipeline.py \
+  --source mongodb \
+  --mongodb-db real_estate_db \
+  --mongodb-collection properties \
+  --mongodb-query-file examples/query_trois_rivieres_triplex.json \
+  --limit 100 \
+  --output exports/ \
+  --formats csv \
+  --optimization medium
+```
+
+**Avantages :**
+
+- ✅ Architecture modulaire et maintenable
+- ✅ Composants spécialisés et réutilisables
+- ✅ Performance optimisée avec modules externes
+- ✅ Validation et rapports automatiques
+- ✅ Export multi-formats avancé
+
 ### **Requêtes MongoDB via Fichier JSON**
 
 ```bash
 # Utiliser un fichier JSON pour des requêtes complexes
-python3 main_ultra_intelligent.py \
+python3 main_modular_pipeline.py \
   --source mongodb \
   --mongodb-db real_estate_db \
   --mongodb-collection properties \
@@ -64,40 +84,72 @@ python3 main_ultra_intelligent.py \
 - ✅ Lisibilité et réutilisabilité
 - ✅ Versioning Git des requêtes
 
-### **Configuration Personnalisée (67 champs)**
+### **Architecture Modulaire (Programmatique)**
 
 ```python
-from config.custom_fields_config import custom_config
-from core.ultra_intelligent_cleaner import UltraIntelligentCleaner
+from core import PipelineManager, DataProcessor, ExportManager
 
-# Utilisez votre configuration personnalisée
-cleaner = UltraIntelligentCleaner(custom_config)
+# Utilisez l'architecture modulaire
+pipeline = PipelineManager(config)
+processor = DataProcessor(pipeline)
+exporter = ExportManager(pipeline)
+
+# Traitement personnalisé
+results = processor.process_data(df, config)
 ```
 
-### **Configuration Standard (78 colonnes)**
+## 🏗️ Architecture Modulaire
 
-```python
-from config.consolidation_config import ConsolidationConfig
-from core.ultra_intelligent_cleaner import UltraIntelligentCleaner
+### **Composants Principaux**
 
-# Utilisez la configuration standard
-config = ConsolidationConfig()
-cleaner = UltraIntelligentCleaner(config)
-```
+- **🎼 PipelineManager** : Orchestrateur principal intégré
+- **📊 DataProcessor** : Traitement et validation des données
+- **💾 ExportManager** : Export multi-formats avancé
+- **📋 ReportGenerator** : Génération automatique des rapports
+- **⚙️ ConfigManager** : Gestion de la configuration
+
+### **Composants Spécialisés**
+
+- **🔍 DataExtractor** : Extraction depuis MongoDB, CSV, JSON
+- **🧠 DataConsolidator** : Consolidation intelligente des colonnes
+- **🧹 DataCleaner** : Nettoyage et normalisation
+- **🚀 DataEnricher** : Enrichissement des données
+- **✅ DataValidator** : Validation complète des données
+
+### **Modules Externes (Optionnels)**
+
+- **🧠 SimilarityDetector** : Détection de similarités avancée
+- **📊 QualityValidator** : Validation de qualité avec Great Expectations
+- **💾 AdvancedExporter** : Export vers formats spécialisés
+- **⚡ PerformanceOptimizer** : Optimisations de performance
+- **🎨 ValidationDashboard** : Dashboard interactif avec Plotly
 
 ## 🧪 Tests de Validation
 
-### **Exécution des Tests**
+### **Test du Pipeline Complet**
 
 ```bash
+# Test avec données de test
+python3 main_modular_pipeline.py --source test --output exports/test --formats csv
+
+# Test avec MongoDB (si disponible)
+python3 main_modular_pipeline.py --source mongodb --mongodb-db test_db --limit 10
+```
+
+### **Tests des Composants Individuels**
+
+```bash
+# Test de la connexion MongoDB
+python3 tests/test_mongodb_connection.py
+
+# Test du pipeline complet
+python3 tests/test_complete_pipeline.py
+
 # Test de la stratégie de consolidation
-python tests/test_consolidation_strategy.py
+python3 tests/test_consolidation_strategy.py
 
 # Test d'intégration de la config personnalisée
-python tests/test_custom_config_integration.py
-
-# Test des nouvelles fonctionnalités
-python tests/test_new_features.py
+python3 tests/test_custom_config_integration.py
 ```
 
 ## 📊 Fonctionnalités Principales
