@@ -25,9 +25,6 @@ except ImportError:
     GREAT_EXPECTATIONS_AVAILABLE = False
     warnings.warn("Great Expectations non disponible - fonctionnalités limitées")
 
-# Désactivation temporaire pour éviter les conflits avec numba
-GREAT_EXPECTATIONS_AVAILABLE = False
-
 # Patch pour éviter l'erreur generated_jit
 try:
     import numba
@@ -78,12 +75,17 @@ class QualityValidator:
         self.validation_results = {}
         self.quality_metrics = {}
         self.anomalies_detected = {}
+        self.current_output_path = None
         
         logger.info("✅ QualityValidator initialisé")
         logger.info(f"📊 Great Expectations: {'✅' if GREAT_EXPECTATIONS_AVAILABLE else '❌'}")
         logger.info(f"🤖 Scikit-learn: {'✅' if SKLEARN_AVAILABLE else '❌'}")
         logger.info(f"📈 Pandas Profiling: {'✅' if PANDAS_PROFILING_AVAILABLE else '❌'}")
         logger.info(f"🔍 Missingno: {'✅' if MISSINGNO_AVAILABLE else '❌'}")
+    
+    def set_output_path(self, output_path: str):
+        """Définit le chemin de sortie pour les rapports"""
+        self.current_output_path = output_path
     
     def _default_validation_config(self) -> Dict:
         """Configuration de validation par défaut"""
@@ -194,7 +196,8 @@ class QualityValidator:
         # === PROFILAGE AVANCÉ ===
         if PANDAS_PROFILING_AVAILABLE:
             logger.info("📊 Profilage avancé...")
-            profiling_results = self._advanced_profiling(df)
+            # Récupérer l'output_path depuis le contexte du pipeline
+            profiling_results = self._advanced_profiling(df, getattr(self, 'current_output_path', None))
         else:
             profiling_results = {"status": "unavailable", "message": "Pandas Profiling non installé"}
         
@@ -769,7 +772,7 @@ class QualityValidator:
         
         return results
     
-    def _advanced_profiling(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _advanced_profiling(self, df: pd.DataFrame, output_path: str = None) -> Dict[str, Any]:
         """Profilage avancé avec Pandas Profiling"""
         if not PANDAS_PROFILING_AVAILABLE:
             return {"status": "unavailable", "message": "Pandas Profiling non installé"}
@@ -782,10 +785,19 @@ class QualityValidator:
                 explorative=True
             )
             
-            # Sauvegarde du rapport
+            # Sauvegarde du rapport dans le bon dossier
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_path = f"quality_profile_{timestamp}.html"
-            profile.to_file(report_path)
+            if output_path:
+                # Utiliser le chemin de sortie du pipeline
+                from pathlib import Path
+                output_dir = Path(output_path)
+                output_dir.mkdir(parents=True, exist_ok=True)
+                report_path = output_dir / f"quality_profile_{timestamp}.html"
+            else:
+                # Fallback: sauvegarde dans le dossier courant
+                report_path = f"quality_profile_{timestamp}.html"
+            
+            profile.to_file(str(report_path))
             
             results = {
                 "status": "completed",

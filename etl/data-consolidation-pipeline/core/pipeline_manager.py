@@ -664,3 +664,12 @@ class PipelineManager:
                 "validation_dashboard": self.validation_dashboard is not None
             }
         }
+
+    def get_current_dataframe(self) -> Optional[pd.DataFrame]:
+        """Retourne le DataFrame actuel du pipeline"""
+        if hasattr(self, 'current_dataframe') and self.current_dataframe is not None:
+            return self.current_dataframe
+        elif hasattr(self, 'data_processor') and hasattr(self.data_processor, 'df'):
+            return self.data_processor.df
+        else:
+            return None

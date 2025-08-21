@@ -1,0 +1,51 @@
+# 🚀 PIPELINE DE CONSOLIDATION DES DONNÉES IMMOBILIÈRES
+# ======================================================
+
+# 📊 CORE DATA SCIENCE
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# 🧠 MACHINE LEARNING & VALIDATION
+scikit-learn>=1.3.0
+great-expectations>=0.17.0
+ydata-profiling>=4.0.0
+missingno>=0.5.0
+
+# 🗄️ MONGODB & BASE DE DONNÉES
+pymongo>=4.0.0
+dnspython>=2.0.0
+
+# 🎨 VISUALISATION & DASHBOARD
+plotly>=5.0.0
+matplotlib>=3.6.0
+seaborn>=0.12.0
+
+# 🔧 UTILITAIRES
+python-dateutil>=2.8.0
+pytz>=2022.1
+fuzzywuzzy>=0.18.0
+python-Levenshtein>=0.12.0
+
+# 📈 PERFORMANCE & OPTIMISATION
+dask>=2023.0.0
+modin>=0.20.0
+numba>=0.57.0
+pyarrow>=10.0.0
+
+# 🌍 GÉOLOCALISATION
+geopandas>=0.12.0
+shapely>=1.8.0
+
+# 💾 EXPORT & FORMATS
+openpyxl>=3.0.0
+h5py>=3.7.0
+
+# 📝 DOCUMENTATION & RAPPORTS
+jinja2>=3.1.0
+markdown>=3.4.0
+pyyaml>=6.0
+
+# 🚀 OPTIONNEL - PERFORMANCE AVANCÉE
+# memory-profiler>=0.60.0
+# psutil>=5.9.0

@@ -102,32 +102,52 @@ class ReportGenerator:
         """Génère le rapport de similarités"""
         try:
             if self.pipeline_manager.similarity_detector:
-                # Utilisation du détecteur de similarités pour générer le rapport
-                report_content = self.pipeline_manager.similarity_detector.generate_similarity_report(
-                    similarity_groups, output_path, timestamp
-                )
-                return report_content
+                # Correction: passage du bon nombre de paramètres
+                # generate_similarity_report prend seulement df et output_path
+                # On utilise le DataFrame du pipeline pour la génération
+                df = self.pipeline_manager.get_current_dataframe()
+                if df is not None:
+                    report_content = self.pipeline_manager.similarity_detector.generate_similarity_report(
+                        df, str(output_path)
+                    )
+                    return report_content
+                else:
+                    logger.warning("⚠️ Aucun DataFrame disponible pour le rapport de similarités")
+                    return self._generate_basic_similarity_report(similarity_groups, output_path, timestamp)
             else:
                 # Rapport basique
-                filename = f"similarity_report_{timestamp}.md"
-                filepath = output_path / filename
-                
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(f"# 📊 Rapport de Similarités - {timestamp}\n\n")
-                    f.write(f"## 🎯 Groupes de Similarités Détectés\n\n")
-                    f.write(f"**Total:** {len(similarity_groups)} groupes\n\n")
-                    
-                    for i, group in enumerate(similarity_groups, 1):
-                        f.write(f"### Groupe {i}\n")
-                        f.write(f"- **Colonnes:** {', '.join(group.get('columns', []))}\n")
-                        f.write(f"- **Score de similarité:** {group.get('similarity_score', 'N/A')}\n")
-                        f.write(f"- **Type de similarité:** {group.get('similarity_type', 'N/A')}\n\n")
-                
-                logger.info(f"📄 Rapport sauvegardé: {filepath}")
-                return str(filepath)
+                return self._generate_basic_similarity_report(similarity_groups, output_path, timestamp)
                 
         except Exception as e:
             logger.error(f"❌ Erreur rapport similarités: {e}")
+            return self._generate_basic_similarity_report(similarity_groups, output_path, timestamp)
+    
+    def _generate_basic_similarity_report(self, similarity_groups: List, 
+                                        output_path: Path, timestamp: str) -> str:
+        """Génère un rapport basique de similarités en cas d'erreur"""
+        try:
+            filename = f"similarity_report_{timestamp}.md"
+            filepath = output_path / filename
+            
+            with open(filepath, 'w', encoding='utf-8') as f:
+                f.write(f"# 📊 Rapport de Similarités - {timestamp}\n\n")
+                f.write(f"## 🎯 Groupes de Similarités Détectés\n\n")
+                f.write(f"**Total:** {len(similarity_groups)} groupes\n\n")
+                
+                for i, group in enumerate(similarity_groups, 1):
+                    f.write(f"### Groupe {i}\n")
+                    if isinstance(group, dict):
+                        f.write(f"- **Colonnes:** {', '.join(group.get('columns', []))}\n")
+                        f.write(f"- **Score de similarité:** {group.get('similarity_score', 'N/A')}\n")
+                        f.write(f"- **Type de similarité:** {group.get('similarity_type', 'N/A')}\n\n")
+                    else:
+                        f.write(f"- **Groupe:** {group}\n\n")
+            
+            logger.info(f"📄 Rapport sauvegardé: {filepath}")
+            return str(filepath)
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur rapport basique: {e}")
             return ""
     
     def _generate_quality_report(self, initial_validation: Dict, final_validation: Dict,
@@ -229,8 +249,11 @@ class ReportGenerator:
                 f.write("## 🧠 Similarités Détectées\n\n")
                 for i, group in enumerate(similarity_groups, 1):
                     f.write(f"### Groupe {i}\n")
-                    f.write(f"- **Colonnes:** {', '.join(group.get('columns', []))}\n")
-                    f.write(f"- **Score:** {group.get('similarity_score', 'N/A')}\n\n")
+                    if isinstance(group, dict):
+                        f.write(f"- **Colonnes:** {', '.join(group.get('columns', []))}\n")
+                        f.write(f"- **Score:** {group.get('similarity_score', 'N/A')}\n\n")
+                    else:
+                        f.write(f"- **Groupe:** {group}\n\n")
                 
                 # Exports
                 f.write("## 💾 Exports\n\n")
