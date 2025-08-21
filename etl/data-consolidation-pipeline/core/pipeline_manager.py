@@ -9,7 +9,7 @@ Gère l'initialisation et l'orchestration du pipeline ETL modulaire
 
 import logging
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 import pandas as pd
 
@@ -182,28 +182,113 @@ class PipelineManager:
             def _process_data(self, df: pd.DataFrame) -> pd.DataFrame:
                 """Traitement intégré des données (consolidation avancée)"""
                 logger.info("🔧 Traitement des données...")
-                
                 df_processed = df.copy()
                 
-                # Consolidation avancée des colonnes similaires
+                # === STRATÉGIE DE CONSOLIDATION INTELLIGENTE ===
+                logger.info("🧠 Application de la stratégie de consolidation intelligente...")
+                
+                # Règles de consolidation complètes
                 consolidation_rules = [
-                    (['price', 'prix'], 'price_final'),
-                    (['surface', 'superficie'], 'surface_final'),
-                    (['bedrooms', 'chambres'], 'bedrooms_final'),
-                    (['bathrooms', 'salle_bain'], 'bathrooms_final'),
-                    (['year_built', 'annee_construction'], 'year_built_final')
+                    # Groupe revenus
+                    (['plex-revenue', 'revenu', 'plex-revenu', 'potential_gross_revenue'], 'revenue_final'),
+                    # Groupe adresses
+                    (['address', 'full_address', 'location'], 'address_final'),
+                    # Groupe prix
+                    (['price_assessment', 'price_final', 'price', 'prix'], 'price_final'),
+                    # Groupe surfaces
+                    (['living_area', 'surface_final', 'surface', 'superficie'], 'surface_final'),
+                    # Groupe chambres
+                    (['nb_bedroom', 'bedrooms_final', 'bedroom', 'chambres'], 'bedrooms_final'),
+                    # Groupe salles de bain
+                    (['nb_bathroom', 'bathrooms_final', 'bathroom', 'salle_bain'], 'bathrooms_final'),
+                    # Groupe année construction
+                    (['construction_year', 'year_built_final', 'year_built', 'annee'], 'year_built_final'),
+                    # Groupe taxes municipales
+                    (['municipal_taxes', 'municipal_tax', 'taxes_municipales'], 'municipal_taxes_final'),
+                    # Groupe taxes scolaires
+                    (['school_taxes', 'school_tax', 'taxes_scolaires'], 'school_taxes_final'),
+                    # Groupe évaluations municipales
+                    (['municipal_evaluation_building', 'municipal_evaluation_land', 'municipal_evaluation_total'], 'municipal_evaluation_final')
                 ]
                 
+                # Application de la consolidation intelligente
+                columns_consolidated = 0
                 for source_cols, target_col in consolidation_rules:
+                    # Filtrer les colonnes disponibles
                     available_cols = [col for col in source_cols if col in df_processed.columns]
-                    if available_cols:
-                        # Prendre la première colonne non-nulle
-                        df_processed[target_col] = df_processed[available_cols].bfill(axis=1).iloc[:, 0]
+                    
+                    if len(available_cols) > 1:
+                        logger.info(f"🔄 Consolidation: {available_cols} → {target_col}")
+                        
+                        # Stratégie de consolidation intelligente
+                        df_processed[target_col] = self._consolidate_columns_intelligently(df_processed, available_cols)
+                        
                         # Supprimer les colonnes sources
                         df_processed = df_processed.drop(columns=available_cols)
+                        columns_consolidated += len(available_cols)
+                        
+                        logger.info(f"✅ {len(available_cols)} colonnes consolidées dans {target_col}")
+                    elif len(available_cols) == 1:
+                        # Renommer la colonne unique
+                        df_processed = df_processed.rename(columns={available_cols[0]: target_col})
+                        logger.info(f"🔄 Renommage: {available_cols[0]} → {target_col}")
+                
+                # Calcul des métriques de consolidation
+                original_columns = len(df.columns)
+                final_columns = len(df_processed.columns)
+                reduction = original_columns - final_columns
+                reduction_percentage = (reduction / original_columns) * 100 if original_columns > 0 else 0
+                
+                logger.info(f"📊 === RÉSULTATS DE LA CONSOLIDATION ===")
+                logger.info(f"Colonnes originales: {original_columns}")
+                logger.info(f"Colonnes finales: {final_columns}")
+                logger.info(f"Colonnes consolidées: {columns_consolidated}")
+                logger.info(f"Réduction: {reduction} colonnes ({reduction_percentage:.1f}%)")
                 
                 logger.info(f"✅ Données traitées: {df_processed.shape[0]} lignes × {df_processed.shape[1]} colonnes")
                 return df_processed
+            
+            def _consolidate_columns_intelligently(self, df: pd.DataFrame, source_columns: List[str]) -> pd.Series:
+                """Consolidation intelligente des colonnes avec stratégie de priorité."""
+                if not source_columns:
+                    return pd.Series(dtype='object')
+                
+                # Stratégie de priorité basée sur le nom de la colonne
+                priority_order = {
+                    'revenue': ['plex-revenue', 'revenu', 'potential_gross_revenue'],
+                    'address': ['address', 'full_address', 'location'],
+                    'price': ['price_final', 'price_assessment', 'price', 'prix'],
+                    'surface': ['surface_final', 'living_area', 'surface', 'superficie'],
+                    'bedrooms': ['bedrooms_final', 'nb_bedroom', 'bedroom', 'chambres'],
+                    'bathrooms': ['bathrooms_final', 'nb_bathroom', 'bathroom', 'salle_bain'],
+                    'year': ['year_built_final', 'construction_year', 'year_built', 'annee'],
+                    'taxes': ['municipal_taxes', 'municipal_tax', 'taxes_municipales'],
+                    'school': ['school_taxes', 'school_tax', 'taxes_scolaires'],
+                    'evaluation': ['municipal_evaluation_total', 'municipal_evaluation_building', 'municipal_evaluation_land']
+                }
+                
+                # Déterminer le type de consolidation
+                consolidation_type = None
+                for key, priority_list in priority_order.items():
+                    if any(col in source_columns for col in priority_list):
+                        consolidation_type = key
+                        break
+                
+                if consolidation_type and consolidation_type in priority_order:
+                    # Appliquer l'ordre de priorité
+                    for priority_col in priority_order[consolidation_type]:
+                        if priority_col in source_columns:
+                            logger.info(f"🎯 Priorité: {priority_col} pour {consolidation_type}")
+                            return df[priority_col]
+                
+                # Fallback: première colonne non-nulle
+                for col in source_columns:
+                    if col in df.columns and not df[col].isna().all():
+                        logger.info(f"🔄 Fallback: {col}")
+                        return df[col]
+                
+                # Dernier fallback: première colonne disponible
+                return df[source_columns[0]]
             
             def get_status(self) -> Dict[str, Any]:
                 """Retourne le statut de l'orchestrateur"""
