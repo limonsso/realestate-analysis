@@ -233,6 +233,15 @@ class PipelineManager:
                         df_processed = df_processed.rename(columns={available_cols[0]: target_col})
                         logger.info(f"🔄 Renommage: {available_cols[0]} → {target_col}")
                 
+                # === CONSOLIDATION INTELLIGENTE DES STRUCTURES COMPLEXES ===
+                logger.info("🧠 Application de la consolidation intelligente des structures complexes...")
+                
+                # Consolidation intelligente des unités
+                df_processed = self._consolidate_units_intelligently(df_processed)
+                
+                # Consolidation intelligente des adresses
+                df_processed = self._consolidate_address_intelligently(df_processed)
+                
                 # Calcul des métriques de consolidation
                 original_columns = len(df.columns)
                 final_columns = len(df_processed.columns)
@@ -289,6 +298,273 @@ class PipelineManager:
                 
                 # Dernier fallback: première colonne disponible
                 return df[source_columns[0]]
+            
+            def _consolidate_units_intelligently(self, df: pd.DataFrame) -> pd.DataFrame:
+                """Consolidation intelligente des colonnes d'unités."""
+                logger.info("🏠 === CONSOLIDATION INTELLIGENTE DES UNITÉS ===")
+                
+                df_consolidated = df.copy()
+                
+                # Colonnes sources pour les unités
+                unit_columns = ['unites', 'residential_units', 'commercial_units']
+                available_columns = [col for col in unit_columns if col in df.columns]
+                
+                # Correction: utilisation de len() sur une liste Python pure
+                if len(available_columns) > 1:
+                    logger.info(f"🔄 Consolidation intelligente des colonnes d'unités: {available_columns}")
+                    
+                    # Créer les colonnes consolidées
+                    df_consolidated['total_units_final'] = self._calculate_total_units(df, available_columns)
+                    df_consolidated['unit_types_final'] = self._extract_unit_types(df, available_columns)
+                    df_consolidated['unit_details_final'] = self._create_unit_details(df, available_columns)
+                    
+                    # Supprimer les colonnes sources
+                    df_consolidated = df_consolidated.drop(columns=available_columns)
+                    
+                    logger.info(f"✅ {len(available_columns)} colonnes d'unités consolidées intelligemment")
+                
+                return df_consolidated
+            
+            def _consolidate_address_intelligently(self, df: pd.DataFrame) -> pd.DataFrame:
+                """Consolidation intelligente des colonnes d'adresses."""
+                logger.info("🏠 === CONSOLIDATION INTELLIGENTE DES ADRESSES ===")
+                
+                df_consolidated = df.copy()
+                
+                # Colonnes sources pour les adresses
+                address_columns = ['address', 'full_address', 'location']
+                available_columns = [col for col in address_columns if col in df.columns]
+                
+                # Correction: utilisation de len() sur une liste Python pure
+                if len(available_columns) > 1:
+                    logger.info(f"🔄 Consolidation intelligente des colonnes d'adresses: {available_columns}")
+                    
+                    # Créer les colonnes consolidées
+                    df_consolidated['street_final'] = self._extract_street(df, available_columns)
+                    df_consolidated['city_final'] = self._extract_city(df, available_columns)
+                    df_consolidated['postal_code_final'] = self._extract_postal_code(df, available_columns)
+                    
+                    # Supprimer les colonnes sources
+                    df_consolidated = df_consolidated.drop(columns=available_columns)
+                    
+                    logger.info(f"✅ {len(available_columns)} colonnes d'adresses consolidées intelligemment")
+                
+                return df_consolidated
+            
+            def _parse_json_string(self, value):
+                """Parse une chaîne JSON de manière sécurisée."""
+                if pd.isna(value) or value == '':
+                    return None
+                
+                # Si c'est déjà une liste ou un dict Python, le retourner directement
+                if isinstance(value, (list, dict)):
+                    return value
+                
+                # Si c'est une chaîne, essayer de la parser
+                if isinstance(value, str):
+                    try:
+                        # Essayer d'abord json.loads
+                        import json
+                        return json.loads(value)
+                    except json.JSONDecodeError:
+                        try:
+                            # Fallback: ast.literal_eval pour les structures Python
+                            import ast
+                            return ast.literal_eval(value)
+                        except (ValueError, SyntaxError):
+                            # Dernier fallback: traiter comme string
+                            return value
+                
+                # Pour tout autre type, retourner tel quel
+                return value
+            
+            def _calculate_total_units(self, df: pd.DataFrame, unit_columns: List[str]) -> pd.Series:
+                """Calcule le nombre total d'unités."""
+                total_units = pd.Series(0, index=df.index)
+                
+                for col in unit_columns:
+                    if col in df.columns:
+                        for idx, value in df[col].items():
+                            if pd.notna(value):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, list):
+                                    # Compter les unités dans la liste
+                                    count = 0
+                                    for item in parsed_value:
+                                        if isinstance(item, dict):
+                                            # Extraire le count ou nb_unite
+                                            if 'count' in item:
+                                                try:
+                                                    count += int(str(item['count']).strip())
+                                                except (ValueError, TypeError):
+                                                    count += 1
+                                            elif 'nb_unite' in item:
+                                                try:
+                                                    count += int(str(item['nb_unite']).strip())
+                                                except (ValueError, TypeError):
+                                                    count += 1
+                                            else:
+                                                count += 1
+                                        else:
+                                            count += 1
+                                    total_units[idx] += count
+                                elif isinstance(parsed_value, dict):
+                                    # Structure simple
+                                    if 'count' in parsed_value:
+                                        try:
+                                            total_units[idx] += int(str(parsed_value['count']).strip())
+                                        except (ValueError, TypeError):
+                                            total_units[idx] += 1
+                                    elif 'nb_unite' in parsed_value:
+                                        try:
+                                            total_units[idx] += int(str(parsed_value['nb_unite']).strip())
+                                        except (ValueError, TypeError):
+                                            total_units[idx] += 1
+                
+                return total_units
+            
+            def _extract_unit_types(self, df: pd.DataFrame, unit_columns: List[str]) -> pd.Series:
+                """Extrait les types d'unités uniques."""
+                unit_types = pd.Series('', index=df.index)
+                
+                for col in unit_columns:
+                    if col in df.columns:
+                        for idx, value in df[col].items():
+                            # Correction: utilisation de méthodes pandas appropriées
+                            current_value = unit_types.iloc[idx]
+                            if pd.notna(value) and (current_value == '' or pd.isna(current_value)):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, list):
+                                    types = []
+                                    for item in parsed_value:
+                                        if isinstance(item, dict):
+                                            # Extraire le type ou unite
+                                            if 'type' in item:
+                                                types.append(str(item['type']))
+                                            elif 'unite' in item:
+                                                types.append(str(item['unite']))
+                                    if types:
+                                        unit_types.iloc[idx] = ', '.join(set(types))
+                                elif isinstance(parsed_value, dict):
+                                    if 'type' in parsed_value:
+                                        unit_types.iloc[idx] = str(parsed_value['type'])
+                                    elif 'unite' in parsed_value:
+                                        unit_types.iloc[idx] = str(parsed_value['unite'])
+                
+                return unit_types
+            
+            def _create_unit_details(self, df: pd.DataFrame, unit_columns: List[str]) -> pd.Series:
+                """Crée une structure détaillée des unités."""
+                unit_details = pd.Series('', index=df.index)
+                
+                for col in unit_columns:
+                    if col in df.columns:
+                        for idx, value in df[col].items():
+                            # Correction: utilisation de méthodes pandas appropriées
+                            current_value = unit_details.iloc[idx]
+                            if pd.notna(value) and (current_value == '' or pd.isna(current_value)):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, list):
+                                    details = []
+                                    for item in parsed_value:
+                                        if isinstance(item, dict):
+                                            detail = {}
+                                            if 'type' in item:
+                                                detail['type'] = item['type']
+                                            elif 'unite' in item:
+                                                detail['type'] = item['unite']
+                                            
+                                            if 'count' in item:
+                                                detail['count'] = item['count']
+                                            elif 'nb_unite' in item:
+                                                detail['count'] = item['nb_unite']
+                                            
+                                            if detail:
+                                                details.append(detail)
+                                    
+                                    if details:
+                                        import json
+                                        unit_details.iloc[idx] = json.dumps(details, ensure_ascii=False)
+                                elif isinstance(parsed_value, dict):
+                                    detail = {}
+                                    if 'type' in parsed_value:
+                                        detail['type'] = parsed_value['type']
+                                    elif 'unite' in parsed_value:
+                                        detail['type'] = parsed_value['unite']
+                                    
+                                    if 'count' in parsed_value:
+                                        detail['count'] = parsed_value['count']
+                                    elif 'nb_unite' in parsed_value:
+                                        detail['count'] = parsed_value['nb_unite']
+                                    
+                                    if detail:
+                                        import json
+                                        unit_details.iloc[idx] = json.dumps([detail], ensure_ascii=False)
+                
+                return unit_details
+            
+            def _extract_street(self, df: pd.DataFrame, address_columns: List[str]) -> pd.Series:
+                """Extrait la rue depuis les colonnes d'adresse."""
+                street = pd.Series('', index=df.index)
+                
+                for col in address_columns:
+                    if col in df.columns:
+                        for idx, value in df[col].items():
+                            # Correction: utilisation de méthodes pandas appropriées
+                            current_value = street.iloc[idx]
+                            if pd.notna(value) and (current_value == '' or pd.isna(current_value)):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, dict):
+                                    if 'street' in parsed_value:
+                                        street.iloc[idx] = str(parsed_value['street'])
+                                elif isinstance(parsed_value, str):
+                                    # Essayer d'extraire la rue d'une adresse complète
+                                    if ',' in parsed_value:
+                                        street.iloc[idx] = parsed_value.split(',')[0].strip()
+                                    else:
+                                        street.iloc[idx] = parsed_value
+                
+                return street
+            
+            def _extract_city(self, df: pd.DataFrame, address_columns: List[str]) -> pd.Series:
+                """Extrait la ville depuis les colonnes d'adresse."""
+                city = pd.Series('', index=df.index)
+                
+                for col in address_columns:
+                    if col in address_columns:
+                        for idx, value in df[col].items():
+                            # Correction: utilisation de méthodes pandas appropriées
+                            current_value = city.iloc[idx]
+                            if pd.notna(value) and (current_value == '' or pd.isna(current_value)):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, dict):
+                                    if 'locality' in parsed_value:
+                                        city.iloc[idx] = str(parsed_value['locality'])
+                                elif isinstance(parsed_value, str):
+                                    # Essayer d'extraire la ville d'une adresse complète
+                                    if ',' in parsed_value:
+                                        parts = parsed_value.split(',')
+                                        if len(parts) > 1:
+                                            city.iloc[idx] = parts[1].strip()
+                
+                return city
+            
+            def _extract_postal_code(self, df: pd.DataFrame, address_columns: List[str]) -> pd.Series:
+                """Extrait le code postal depuis les colonnes d'adresse."""
+                postal_code = pd.Series('', index=df.index)
+                
+                for col in address_columns:
+                    if col in address_columns:
+                        for idx, value in df[col].items():
+                            # Correction: utilisation de méthodes pandas appropriées
+                            current_value = postal_code.iloc[idx]
+                            if pd.notna(value) and (current_value == '' or pd.isna(current_value)):
+                                parsed_value = self._parse_json_string(value)
+                                if isinstance(parsed_value, dict):
+                                    if 'postal_code' in parsed_value:
+                                        postal_code.iloc[idx] = str(parsed_value['postal_code'])
+                
+                return postal_code
             
             def get_status(self) -> Dict[str, Any]:
                 """Retourne le statut de l'orchestrateur"""
