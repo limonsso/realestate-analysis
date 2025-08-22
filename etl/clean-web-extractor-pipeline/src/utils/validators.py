@@ -4,6 +4,7 @@ Utilitaires de validation pour le pipeline d'extraction immobilière
 
 from typing import List, Optional
 import re
+from src.models.property import PropertyType
 
 
 class RegionValidator:
@@ -212,4 +213,50 @@ class DataValidator:
         cleaned = re.sub(r'\s+', ' ', cleaned)
         
         return cleaned if cleaned else None
+
+
+class TypeCategoryValidator:
+    """Validateur pour la cohérence type/catégorie des propriétés"""
+    
+    @staticmethod
+    def validate_type_category_consistency(property_data) -> bool:
+        """
+        Valide la cohérence entre le type et la catégorie de la propriété.
+        
+        Args:
+            property_data: Objet Property à valider
+            
+        Returns:
+            bool: True si la cohérence est respectée
+        """
+        try:
+            if not hasattr(property_data, 'type') or not hasattr(property_data, 'category'):
+                return False
+            
+            # Règles de validation par catégorie
+            validation_rules = {
+                PropertyType.PLEX: lambda type_str: "plex" in type_str.lower() if type_str else False,
+                PropertyType.SINGLE_FAMILY_HOME: lambda type_str: any(
+                    keyword in type_str.lower() if type_str else False 
+                    for keyword in ["maison", "bungalow", "cottage", "villa"]
+                ),
+                PropertyType.SELL_CONDO: lambda type_str: any(
+                    keyword in type_str.lower() if type_str else False 
+                    for keyword in ["condo", "appartement", "penthouse"]
+                ),
+                PropertyType.RESIDENTIAL_LOT: lambda type_str: any(
+                    keyword in type_str.lower() if type_str else False 
+                    for keyword in ["terrain", "lot"]
+                )
+            }
+            
+            # Vérifier la règle pour la catégorie
+            if property_data.category in validation_rules:
+                rule = validation_rules[property_data.category]
+                return rule(property_data.type)
+            
+            return False
+            
+        except Exception:
+            return False
 

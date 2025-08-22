@@ -28,18 +28,21 @@ centris:
     - type: "GeographicArea"
       value: "Laval"
       type_id: "GSGS4622"
-  
+    - type: "CityDistrict"
+      value: "Chambly"
+      type_id: 730
+
   # Types de propriétés disponibles
   property_types:
     - "Plex"
     - "SingleFamilyHome"
     - "SellCondo"
     - "ResidentialLot"
-  
+
   # Plage de prix (en dollars canadiens)
   sale_price_min: 0
   sale_price_max: 5000000
-  
+
   # Force la mise à jour des propriétés existantes
   force_update: false
 
@@ -52,12 +55,12 @@ database:
   password: null # Laissez null si pas d'authentification
   auth_source: "admin"
   auth_mechanism: "SCRAM-SHA-256"
-  
+
   # Noms des collections MongoDB
   properties_collection: "properties_2024"
   summaries_collection: "summaries_2024"
   logs_collection: "extraction_logs_2024"
-  
+
   # Options de connexion
   max_pool_size: 100
   min_pool_size: 0

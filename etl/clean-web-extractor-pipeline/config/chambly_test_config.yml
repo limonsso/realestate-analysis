@@ -1,0 +1,76 @@
+# 🏠 Configuration de Test : Plex à Chambly
+# Configuration spécifique pour l'extraction de plex à Chambly
+
+# Configuration de la base de données
+database:
+  uri: ${MONGODB_URI:-mongodb://localhost:27017}
+  database: ${MONGODB_DATABASE:-real_estate_test}
+  collection: ${MONGODB_COLLECTION:-chambly_plex_test}
+  max_pool_size: 10
+  min_pool_size: 1
+  server_selection_timeout_ms: 10000
+  connect_timeout_ms: 10000
+  socket_timeout_ms: 10000
+
+# Configuration Centris pour Chambly
+centris:
+  base_url: ${CENTRIS_BASE_URL:-https://www.centris.ca}
+  user_agent: ${CENTRIS_USER_AGENT:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36}
+  request_timeout: ${REQUEST_TIMEOUT:-60}
+  max_retries: ${MAX_RETRIES:-5}
+  retry_delay: ${RETRY_DELAY:-2}
+
+  # Localisation spécifique : Chambly avec son propre CityDistrict
+  locations_searched:
+    - type: "CityDistrict"
+      value: "Chambly"
+      type_id: 730
+
+  # Types de propriétés : Plex uniquement
+  property_types: ["Plex"]
+
+  # Fourchettes de prix réalistes pour Chambly
+  sale_price_min: ${SALE_PRICE_MIN:-200000}
+  sale_price_max: ${SALE_PRICE_MAX:-600000}
+
+# Configuration du pipeline pour le test
+pipeline:
+  max_workers: ${MAX_WORKERS:-2}
+  batch_size: ${BATCH_SIZE:-5}
+  request_timeout: ${REQUEST_TIMEOUT:-60}
+  max_retries: ${MAX_RETRIES:-5}
+  retry_delay: ${RETRY_DELAY:-2}
+
+  # Logging détaillé pour le test
+  log_level: ${LOG_LEVEL:-DEBUG}
+  log_file: ${LOG_FILE:-logs/chambly_test.log}
+  log_format: ${LOG_FORMAT:-json}
+
+  # Performance optimisée pour le test
+  enable_cache: true
+  cache_ttl: 1800 # 30 minutes
+  rate_limit: 5 # 5 requêtes/seconde pour être respectueux
+
+# Configuration spécifique au test Chambly
+test_config:
+  # Limites du test
+  max_properties_to_extract: 10
+  max_pages_to_process: 3
+
+  # Filtres spécifiques à Chambly
+  chambly_filters:
+    city_keywords: ["chambly", "chambly-bassin"]
+    street_keywords: ["chambly", "bassin"]
+
+  # Validation des données
+  validation:
+    require_chambly_location: true
+    require_valid_price: true
+    require_complete_address: true
+
+  # Métriques de test
+  metrics:
+    expected_min_properties: 1
+    expected_max_properties: 20
+    expected_price_range: [200000, 600000]
+    expected_property_types: ["Plex"]

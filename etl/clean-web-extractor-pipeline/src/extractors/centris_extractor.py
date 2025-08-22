@@ -1,37 +1,42 @@
 """
-Extracteur de données pour Centris.ca
-Architecture modulaire et maintenable
+Extracteur Centris Modulaire - Point d'entrée principal
 """
 
-import asyncio
+from typing import List, Optional, Dict, Any
 import structlog
-from typing import List, Optional
 from bs4 import BeautifulSoup
 
-from config.settings import config
-from src.models.property import Property, PropertySummary, SearchQuery
-from src.extractors.centris.session_manager import CentrisSessionManager
-from src.extractors.centris.search_manager import CentrisSearchManager
-from src.extractors.centris.summary_extractor import CentrisSummaryExtractor
-from src.extractors.centris.detail_extractor import CentrisDetailExtractor
-from src.extractors.centris.data_validator import CentrisDataValidator
+from src.models.property import SearchQuery, PropertySummary, Property
+from .centris.session_manager import CentrisSessionManager
+from .centris.search_manager import CentrisSearchManager
+from .centris.summary_extractor import CentrisSummaryExtractor
+from .centris.detail_extractor import CentrisDetailExtractor
+from .centris.data_validator import CentrisDataValidator
 
 logger = structlog.get_logger()
 
 
-class CentrisExtractionError(Exception):
-    """Exception personnalisée pour les erreurs d'extraction Centris"""
-    pass
-
-
 class CentrisExtractor:
-    """Extracteur de données pour Centris.ca - Architecture modulaire"""
+    """
+    Extracteur principal pour Centris.ca utilisant une architecture modulaire.
     
-    def __init__(self, centris_config):
-        self.config = centris_config
+    Cette classe orchestre les différents composants spécialisés :
+    - SessionManager : Gestion des sessions HTTP
+    - SearchManager : Gestion des requêtes de recherche
+    - SummaryExtractor : Extraction des résumés de propriétés
+    - DetailExtractor : Extraction des détails complets
+    - DataValidator : Validation des données extraites
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialise l'extracteur avec sa configuration.
         
-        # Initialisation des composants spécialisés
-        self.session_manager = CentrisSessionManager(centris_config)
+        Args:
+            config: Configuration pour l'extraction Centris
+        """
+        self.config = config
+        self.session_manager = CentrisSessionManager(config)
         self.search_manager = CentrisSearchManager(self.session_manager)
         self.summary_extractor = CentrisSummaryExtractor(self.session_manager)
         self.detail_extractor = CentrisDetailExtractor()
@@ -39,104 +44,85 @@ class CentrisExtractor:
         
         logger.info("🔧 CentrisExtractor initialisé avec architecture modulaire")
     
-    async def __aenter__(self):
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.session_manager.close()
-    
     async def extract_summaries(self, search_query: SearchQuery) -> List[PropertySummary]:
         """
-        Extrait les résumés de propriétés depuis les résultats de recherche
+        Extrait les résumés de propriétés pour une requête donnée.
         
         Args:
-            search_query: Paramètres de recherche
+            search_query: Requête de recherche
             
         Returns:
-            Liste des résumés de propriétés
+            List[PropertySummary]: Liste des résumés extraits
         """
-        logger.info(f"🔍 Extraction des résumés pour {search_query.locations} - {search_query.property_types}")
-        
         try:
-            # Utilisation du gestionnaire de recherche
-            pages_html = await self.search_manager.search_with_pagination(search_query)
+            logger.info(f"🔍 Extraction des résumés pour {search_query.locations} - {search_query.property_types}")
             
-            if not pages_html:
-                logger.warning("⚠️ Aucune page de résultats trouvée")
-                return []
+            # Recherche paginée avec le SearchManager
+            search_results = await self.search_manager.search_with_pagination(search_query)
             
-            all_summaries = []
+            # Extraction des résumés avec le SummaryExtractor
+            summaries = []
+            for page_content in search_results:
+                page_summaries = self.summary_extractor.extract_summaries_from_html(page_content)
+                summaries.extend(page_summaries)
             
-            # Traitement de chaque page
-            for page_num, page_html in enumerate(pages_html, 1):
-                logger.debug(f"📄 Traitement de la page {page_num}")
-                
-                # Extraction des résumés depuis le HTML
-                page_summaries = self.summary_extractor.extract_summaries_from_html(page_html)
-                
-                # Validation des résultats de la première page
-                if page_num == 1:
-                    valid = self.data_validator.validate_search_results(page_summaries, search_query)
-                    if not valid:
-                        logger.warning("⚠️ Les résultats de la première page ne sont pas valides")
-                        logger.warning("⚠️ Vérifiez les paramètres de recherche")
-                        return []
-                
-                all_summaries.extend(page_summaries)
-                logger.info(f"✅ Page {page_num}: {len(page_summaries)} propriétés trouvées")
+            # Validation des résumés
+            validation_success = self.data_validator.validate_search_results(summaries, search_query)
             
-            logger.info(f"🎉 Extraction terminée: {len(all_summaries)} propriétés trouvées au total")
-            return all_summaries
+            if validation_success:
+                logger.info(f"🎉 Extraction terminée: {len(summaries)} propriétés trouvées au total")
+            else:
+                logger.warning(f"⚠️ Validation échouée mais {len(summaries)} propriétés extraites")
+            
+            return summaries
             
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'extraction des résumés: {str(e)}")
-            raise CentrisExtractionError(f"Échec de l'extraction des résumés: {str(e)}")
+            logger.error(f"❌ Erreur lors de l'extraction des résumés: {e}")
+            raise
     
     async def extract_details(self, property_url: str) -> Optional[Property]:
         """
-        Extrait les détails complets d'une propriété depuis sa page dédiée
+        Extrait les détails complets d'une propriété.
         
         Args:
-            property_url: URL de la page de détail de la propriété
+            property_url: URL de la propriété
             
         Returns:
-            Objet Property avec tous les détails ou None en cas d'échec
+            Optional[Property]: Propriété avec détails complets ou None
         """
-        logger.debug(f"🔍 Extraction des détails depuis {property_url}")
-        
         try:
-            # Utilisation du gestionnaire de session
+            # Récupérer le contenu HTML de la page
             async with self.session_manager.session.get(property_url) as response:
                 if response.status != 200:
-                    logger.warning(f"⚠️ Statut HTTP {response.status} pour {property_url}")
+                    logger.error(f"❌ Erreur HTTP {response.status} pour {property_url}")
                     return None
                 
                 html_content = await response.text()
                 soup = BeautifulSoup(html_content, 'html.parser')
                 
-                # Utilisation de l'extracteur de détails spécialisé
-                property_data = await self.detail_extractor.extract_property_details(soup, property_url)
+                # Appeler l'extracteur avec soup et URL
+                return await self.detail_extractor.extract_property_details(soup, property_url)
                 
-                if property_data:
-                    logger.debug(f"✅ Détails extraits avec succès pour {property_url}")
-                    return property_data
-                else:
-                    logger.warning(f"⚠️ Aucun détail extrait pour {property_url}")
-                    return None
-                    
         except Exception as e:
-            logger.error(f"❌ Erreur lors de l'extraction des détails: {str(e)}")
+            logger.error(f"❌ Erreur lors de l'extraction des détails: {e}")
             return None
     
-    def set_validation_threshold(self, threshold: float):
-        """Définit le seuil de validation pour les résultats de recherche"""
-        self.data_validator.set_validation_threshold(threshold)
-    
-    def get_validation_threshold(self) -> float:
-        """Retourne le seuil de validation actuel"""
-        return self.data_validator.get_validation_threshold()
+    async def extract_property_batch(self, urls: List[str]) -> List[Property]:
+        """
+        Extrait les détails d'un lot de propriétés en parallèle.
+        
+        Args:
+            urls: Liste des URLs de propriétés
+            
+        Returns:
+            List[Property]: Liste des propriétés extraites
+        """
+        return await self.detail_extractor.extract_properties_batch(urls)
     
     async def close(self):
-        """Ferme proprement l'extracteur"""
-        await self.session_manager.close()
-        logger.info("🔌 CentrisExtractor fermé proprement")
+        """Ferme les ressources de l'extracteur."""
+        try:
+            await self.session_manager.close()
+            logger.info("🔌 CentrisExtractor fermé proprement")
+        except Exception as e:
+            logger.warning(f"⚠️ Erreur lors de la fermeture: {e}")

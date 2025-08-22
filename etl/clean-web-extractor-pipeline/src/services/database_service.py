@@ -29,6 +29,7 @@ class DatabaseService:
         self.properties_collection = None
         self.summaries_collection = None
         self.extraction_logs_collection = None
+        self.logger = logger  # Ajouter le logger comme attribut
         
         # Noms des collections depuis la configuration
         self.collection_names = {
@@ -53,7 +54,7 @@ class DatabaseService:
         self.logger.info(f"   - Résumés: {self.collection_names['summaries']}")
         self.logger.info(f"   - Logs: {self.collection_names['logs']}")
     
-    def connect(self):
+    async def connect(self):
         """Établit la connexion à la base de données"""
         try:
             self.logger.info(f"🔌 Connexion à MongoDB: {self.config.server_url}")
@@ -94,6 +95,54 @@ class DatabaseService:
         if self.client:
             self.client.close()
             logger.info("🔌 Connexion MongoDB fermée")
+    
+    async def create_collection(self, collection_name: str):
+        """Crée une nouvelle collection MongoDB"""
+        try:
+            # Vérifier si la collection existe déjà
+            if collection_name in await self.db.list_collection_names():
+                self.logger.info(f"📋 Collection {collection_name} existe déjà")
+                return
+            
+            # Créer la collection
+            await self.db.create_collection(collection_name)
+            self.logger.info(f"✅ Collection {collection_name} créée avec succès")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Erreur lors de la création de la collection {collection_name}: {str(e)}")
+            raise
+    
+    async def count_properties(self, collection_name: str = None) -> int:
+        """Compte le nombre de propriétés dans une collection"""
+        try:
+            collection = self.db[collection_name] if collection_name else self.properties_collection
+            count = await collection.count_documents({})
+            self.logger.debug(f"📊 {count} propriétés trouvées dans {collection_name or 'collection par défaut'}")
+            return count
+        except Exception as e:
+            self.logger.error(f"❌ Erreur lors du comptage des propriétés: {str(e)}")
+            return 0
+    
+    async def get_properties(self, collection_name: str = None, limit: int = 10) -> List[Property]:
+        """Récupère des propriétés depuis une collection"""
+        try:
+            collection = self.db[collection_name] if collection_name else self.properties_collection
+            cursor = collection.find({}).limit(limit)
+            properties = []
+            async for doc in cursor:
+                try:
+                    # Convertir le document MongoDB en objet Property
+                    property_data = Property(**doc)
+                    properties.append(property_data)
+                except Exception as e:
+                    self.logger.warning(f"⚠️ Erreur lors de la conversion d'une propriété: {e}")
+                    continue
+            
+            self.logger.debug(f"📊 {len(properties)} propriétés récupérées depuis {collection_name or 'collection par défaut'}")
+            return properties
+        except Exception as e:
+            self.logger.error(f"❌ Erreur lors de la récupération des propriétés: {str(e)}")
+            return []
     
     def ensure_indexes(self):
         """Crée les index nécessaires pour optimiser les performances"""
@@ -144,12 +193,15 @@ class DatabaseService:
             logger.error(f"❌ Erreur lors de la création des index: {str(e)}")
             raise
     
-    def save_property(self, property_data: Property) -> bool:
+    async def save_property(self, property_data: Property, collection_name: str = None) -> bool:
         """Sauvegarde une propriété dans la base de données"""
         try:
             if not property_data.id:
                 logger.warning("⚠️ Tentative de sauvegarde d'une propriété sans ID")
                 return False
+            
+            # Utiliser la collection spécifiée ou la collection par défaut
+            collection = self.db[collection_name] if collection_name else self.properties_collection
             
             # Conversion en dictionnaire
             property_dict = property_data.dict()
@@ -158,14 +210,14 @@ class DatabaseService:
             property_dict['metadata']['last_updated'] = datetime.now()
             
             # Upsert (insert ou update)
-            result = self.properties_collection.update_one(
+            result = await collection.update_one(
                 {"id": property_data.id},
                 {"$set": property_dict},
                 upsert=True
             )
             
             if result.upserted_id or result.modified_count > 0:
-                logger.debug(f"💾 Propriété {property_data.id} sauvegardée avec succès")
+                logger.debug(f"💾 Propriété {property_data.id} sauvegardée avec succès dans {collection_name or 'collection par défaut'}")
                 return True
             else:
                 logger.warning(f"⚠️ Aucune modification pour la propriété {property_data.id}")
@@ -178,7 +230,7 @@ class DatabaseService:
             logger.error(f"❌ Erreur lors de la sauvegarde de {property_data.id}: {str(e)}")
             return False
     
-    def save_property_summary(self, summary: PropertySummary) -> bool:
+    async def save_property_summary(self, summary: PropertySummary) -> bool:
         """Sauvegarde un résumé de propriété"""
         try:
             if not summary.id:
@@ -188,7 +240,7 @@ class DatabaseService:
             summary_dict = summary.dict()
             summary_dict['last_updated'] = datetime.now()
             
-            result = self.summaries_collection.update_one(
+            result = await self.summaries_collection.update_one(
                 {"id": summary.id},
                 {"$set": summary_dict},
                 upsert=True

@@ -1,697 +1,436 @@
-# 🏠 Pipeline d'Extraction Web Immobilière
+# 🏠 Pipeline d'Extraction Immobilière - Centris.ca
 
-Un pipeline **autonome et maintenable** pour extraire, traiter et analyser les données immobilières depuis le web. **Aucune dépendance externe** comme Airflow ou Prefect - exécution directe avec paramètres en ligne de commande.
+## 📋 Vue d'Ensemble
 
-## ✨ Caractéristiques
+Pipeline modulaire et maintenable pour l'extraction de données immobilières depuis Centris.ca. Conçu avec une architecture moderne utilisant `asyncio`, Pydantic pour la validation des données, et une approche modulaire pour une maintenance facile.
 
-- **🚀 Autonome** : Aucune dépendance externe, exécution directe
-- **⚙️ Paramétrable** : Arguments en ligne de commande pour personnaliser l'exécution
-- **🏗️ Architecture moderne** : Pydantic pour la validation, asyncio pour la performance
-- **🔍 Extraction robuste** : Gestion des erreurs, retry automatique, rotation des User-Agents
-- **🗄️ Base de données optimisée** : MongoDB avec index et agrégations
-- **📝 Logging structuré** : Structlog avec métriques et observabilité
-- **⚙️ Configuration flexible** : Variables d'environnement et fichiers YAML
-- **🧪 Tests complets** : Suite de tests avec pytest
-- **📚 Documentation détaillée** : API docs et guides d'utilisation
+## 🚀 Fonctionnalités Principales
+
+- ✅ **Extraction complète** : Résumés + détails des propriétés
+- ✅ **Architecture modulaire** : Composants spécialisés et réutilisables
+- ✅ **Validation robuste** : Cohérence type/catégorie automatique
+- ✅ **Structure propre** : Code organisé et maintenable
+- ✅ **Test intégré** : Validation Chambly Plex fonctionnelle
+- ✅ **Gestion des erreurs** : Retry automatique et gestion des timeouts
+- ✅ **Logging structuré** : Traçabilité complète avec structlog
+- ✅ **Configuration flexible** : YAML + variables d'environnement
 
 ## 🏗️ Architecture
 
-### **Architecture Générale**
+### **Structure Modulaire**
 
 ```
-clean-web-extractor-pipeline/
-├── run.py                   # 🚀 Script de démarrage simple
-├── src/                     # Code source principal
-│   ├── core/               # Pipeline principal autonome
-│   ├── extractors/         # Extracteurs web (Centris, DuProprio, etc.)
-│   │   └── centris/        # Package Centris modulaire
-│   ├── models/             # Modèles de données Pydantic
-│   ├── services/           # Services métier
-│   └── utils/              # Utilitaires et helpers
-├── config/                  # Configuration et paramètres
-├── scripts/                 # Scripts d'exécution avancés
-├── tests/                   # Tests unitaires et d'intégration
-├── data/                    # Données extraites et cache
-├── logs/                    # Fichiers de logs
-└── docs/                    # Documentation
+src/extractors/centris/
+├── 🎭 session_manager.py      # Gestion des sessions HTTP
+├── 🔍 search_manager.py       # Recherche et pagination
+├── 📊 summary_extractor.py    # Extraction des résumés
+├── 🏠 detail_extractor.py     # Extraction des détails
+├── ✅ data_validator.py       # Validation des données
+└── 🚀 centris_extractor.py   # Orchestrateur principal
 ```
 
-### **Architecture Modulaire du CentrisExtractor** 🏗️
+### **Composants Clés**
 
-Le `CentrisExtractor` a été refactorisé en composants spécialisés pour une meilleure maintenabilité :
+1. **CentrisSessionManager** : Gestion des sessions HTTP avec retry et timeout
+2. **CentrisSearchManager** : Construction des requêtes et pagination
+3. **CentrisSummaryExtractor** : Extraction des résumés de propriétés
+4. **CentrisDetailExtractor** : Extraction des détails complets
+5. **CentrisDataValidator** : Validation et nettoyage des données
+6. **CentrisExtractor** : Orchestrateur principal coordonnant tous les composants
 
-```
-📦 CentrisExtractor (Orchestrateur principal)
-├── 🔌 CentrisSessionManager     # Gestion des sessions HTTP
-├── 🔍 CentrisSearchManager      # Recherche et pagination
-├── 📋 CentrisSummaryExtractor   # Extraction des résumés
-├── 🔎 CentrisDetailExtractor    # Extraction des détails
-└── ✅ CentrisDataValidator      # Validation des données
-```
+## 🛠️ Installation et Configuration
 
-#### **Responsabilités des Composants :**
-
-- **`CentrisSessionManager`** : Configuration des sessions HTTP, headers, timeouts
-- **`CentrisSearchManager`** : Initialisation des recherches, pagination, construction des requêtes API
-- **`CentrisSummaryExtractor`** : Parsing HTML des pages de résultats, extraction des résumés
-- **`CentrisDetailExtractor`** : Extraction des détails complets depuis les pages de propriétés
-- **`CentrisDataValidator`** : Validation des résultats de recherche et des données extraites
-
-#### **Avantages de l'Architecture Modulaire :**
-
-✅ **Maintenabilité** : Chaque composant a une responsabilité unique  
-✅ **Testabilité** : Tests unitaires indépendants pour chaque composant  
-✅ **Extensibilité** : Ajout facile de nouveaux extracteurs ou validateurs  
-✅ **Réutilisabilité** : Composants réutilisables dans d'autres contextes  
-✅ **Débogage** : Isolation des problèmes et diagnostics plus précis  
-✅ **Équipe** : Développement parallèle sur différents composants
-
-## 🚀 Installation
-
-### Prérequis
-
-- Python 3.9+
-- MongoDB 4.4+
-- Git
-
-### Installation
+### **Prérequis**
 
 ```bash
-# Cloner le repository
-git clone <repository-url>
-cd clean-web-extractor-pipeline
-
-# Créer un environnement virtuel
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# ou
-venv\Scripts\activate     # Windows
-
-# Installer les dépendances
+Python 3.8+
 pip install -r requirements.txt
+```
 
-# Configuration des variables d'environnement
+### **Configuration**
+
+1. **Copier le fichier d'environnement** :
+
+```bash
 cp env.example .env
-# Éditer .env avec vos paramètres
+```
 
-# Configuration optionnelle
-cp config/config.example.yml config/config.yml
-# Éditer config.yml selon vos besoins
+2. **Configurer les variables** :
+
+```bash
+# MongoDB
+MONGODB_URI=mongodb://localhost:27017
+MONGODB_DATABASE=real_estate
+MONGODB_COLLECTION=properties
+
+# Centris
+CENTRIS_BASE_URL=https://www.centris.ca
+CENTRIS_USER_AGENT=Mozilla/5.0...
+
+# Pipeline
+MAX_WORKERS=4
+BATCH_SIZE=10
+REQUEST_TIMEOUT=30
+MAX_RETRIES=3
+RETRY_DELAY=1
+```
+
+3. **Configuration YAML** (`config/config.yml`) :
+
+```yaml
+database:
+  uri: ${MONGODB_URI}
+  database: ${MONGODB_DATABASE}
+  collection: ${MONGODB_COLLECTION}
+
+centris:
+  base_url: ${CENTRIS_BASE_URL}
+  user_agent: ${CENTRIS_USER_AGENT}
+  locations_searched:
+    - type: "GeographicArea"
+      value: "Montérégie"
+      type_id: "RARA16"
+    - type: "CityDistrict"
+      value: "Vieux-Montréal"
+      type_id: 449
+  property_types: ["Plex", "SingleFamilyHome", "SellCondo"]
+  sale_price_min: 200000
+  sale_price_max: 260000
+
+pipeline:
+  max_workers: ${MAX_WORKERS}
+  batch_size: ${BATCH_SIZE}
+  request_timeout: ${REQUEST_TIMEOUT}
+  max_retries: ${MAX_RETRIES}
+  retry_delay: ${RETRY_DELAY}
+  log_level: "INFO"
 ```
 
 ## 🎯 Utilisation
 
-### 🚀 Exécution Simple
+### **Test Principal : Chambly Plex**
 
 ```bash
-# Exécution complète avec configuration par défaut
+# Test complet d'extraction de plex à Chambly
+python run_chambly_test.py
+```
+
+### **Exécution Simple**
+
+```bash
 python run.py
-
-# Exécution avec script avancé
-python scripts/run_pipeline.py
 ```
 
-### ⚙️ Paramètres en Ligne de Commande
+### **Exécution avec Paramètres Personnalisés**
+
+```python
+from src.extractors.centris_extractor import CentrisExtractor
+from config.settings import config
+from src.models.property import SearchQuery, LocationConfig
+
+# Initialisation
+extractor = CentrisExtractor(config.centris)
+
+# Création d'une requête de recherche
+search_query = SearchQuery(
+    locations=[
+        LocationConfig(
+            type="GeographicArea",
+            value="Montérégie",
+            type_id="RARA16"
+        )
+    ],
+    property_types=["Plex"],
+    price_min=200000,
+    price_max=260000
+)
+
+# Extraction des résumés
+summaries = await extractor.extract_summaries(search_query)
+print(f"✅ {len(summaries)} propriétés trouvées")
+
+# Extraction des détails (optionnel)
+for summary in summaries[:3]:
+    details = await extractor.extract_details(summary.id)
+    print(f"🏠 {details.address.street} - {details.price}$")
+
+# Fermeture propre
+await extractor.close()
+```
+
+### **Types de Recherche Supportés**
+
+#### **GeographicArea (Régions)**
+
+```python
+LocationConfig(
+    type="GeographicArea",
+    value="Montérégie",
+    type_id="RARA16"
+)
+```
+
+#### **CityDistrict (Districts de ville)**
+
+```python
+LocationConfig(
+    type="CityDistrict",
+    value="Vieux-Montréal",
+    type_id: 449
+)
+```
+
+#### **Recherche Multiple**
+
+```python
+locations=[
+    LocationConfig(type="GeographicArea", value="Laurentides", type_id="RARA15"),
+    LocationConfig(type="CityDistrict", value="Plateau-Mont-Royal", type_id=450)
+]
+```
+
+## 🧪 Tests
+
+### **Exécution des Tests**
 
 ```bash
-# Extraction pour une localisation spécifique
-python run.py --location "Montréal"
+# Tests de structure Centris
+python tests/test_centris_structure.py
 
-# Extraction pour un type de propriété spécifique
-python run.py --property-type "Condo"
+# Tests d'extraction réelle
+python tests/real_extraction_test.py
 
-# Extraction pour une région spécifique
-python run.py --region "Québec"
+# Tests d'intégration
+python tests/updated_integration_test.py
 
-# Spécification du nom de la table/collection MongoDB
-python run.py --table-name "properties_2024"
+# Tests de performance
+python tests/performance_test.py
 
-# Spécification du nom de la base de données
-python run.py --database-name "real_estate_2024"
+# Tests de robustesse
+python tests/robustness_test.py
 
-# Mode debug avec plus de logs
-python run.py --debug
-
-# Limitation du nombre de propriétés
-python run.py --max-properties 100
-
-# Personnalisation de la taille des lots
-python run.py --batch-size 25
-
-# Sortie en format JSON
-python run.py --output-format json --output-file results.json
-
-# Sortie en format CSV
-python run.py --output-format csv --output-file results.csv
-
-# Mode simulation (dry-run)
-python run.py --dry-run
+# Tous les tests d'intégration
+python tests/run_integration_tests.py
 ```
 
-### 📋 Tous les Paramètres Disponibles
+### **Test Principal : Chambly Plex**
 
 ```bash
-python run.py --help
+# Test d'extraction réelle de plex à Chambly
+python run_chambly_test.py
 ```
 
-**Filtres de localisation :**
+Ce test valide l'extraction complète avec :
 
-- `--location, -l` : Localisation spécifique (ex: "Montréal", "Laval")
-- `--region, -r` : Région spécifique (ex: "Québec", "Ontario")
+- ✅ Recherche de propriétés à Chambly
+- ✅ Extraction des résumés et détails
+- ✅ Sauvegarde en base MongoDB
+- ✅ Validation de la cohérence type/catégorie
+- ✅ Vérification de la qualité des données
 
-**Filtres de propriété :**
-
-- `--property-type, -t` : Type de propriété (ex: "Condo", "House")
-
-**Options de base de données :**
-
-- `--table-name, -n` : Nom de la collection MongoDB (ex: "properties_2024", "real_estate_data")
-- `--database-name` : Nom de la base de données MongoDB (ex: "real_estate_db", "property_data")
-
-**Options de performance :**
-
-- `--max-properties` : Nombre maximum de propriétés à traiter
-- `--batch-size` : Taille des lots de traitement
-
-**Options de debug :**
-
-- `--debug, -d` : Mode debug avec logs détaillés
-- `--dry-run` : Simulation sans sauvegarde en base
-
-**Options de sortie :**
-
-- `--output-format` : Format de sortie (json, csv, console)
-- `--output-file` : Fichier de sortie pour les résultats
-
-### 🔧 Exemples d'Utilisation Avancés
-
-#### **Organisation par Année/Mois**
+### **Tests de Validation**
 
 ```bash
-# Extraction pour 2024
-python run.py --table-name "properties_2024" --database-name "real_estate_2024"
+# Tests de performance
+python tests/performance_test.py
 
-# Extraction pour janvier 2024
-python run.py --table-name "properties_2024_01" --database-name "real_estate_2024"
+# Tests de robustesse
+python tests/robustness_test.py
 
-# Extraction pour une région spécifique en 2024
-python run.py --location "Montréal" --table-name "montreal_2024"
-```
-
-#### **Organisation par Type de Propriété**
-
-```bash
-# Extraction des condos dans une collection dédiée
-python run.py --property-type "Condo" --table-name "condos_2024"
-
-# Extraction des maisons unifamiliales
-python run.py --property-type "SingleFamilyHome" --table-name "houses_2024"
-
-# Extraction des plex
-python run.py --property-type "Plex" --table-name "plex_2024"
-```
-
-#### **Organisation par Localisation**
-
-```bash
-# Extraction pour Montréal
-python run.py --location "Montréal" --table-name "montreal_properties"
-
-# Extraction pour Laval
-python run.py --location "Laval" --table-name "laval_properties"
-
-# Extraction pour la Montérégie
-python run.py --location "Montérégie" --table-name "monteregie_properties"
-```
-
-#### **Combinaisons de Paramètres**
-
-```bash
-# Extraction des condos à Montréal en 2024
-python run.py --location "Montréal" --property-type "Condo" --table-name "montreal_condos_2024"
-
-# Extraction des maisons en Montérégie avec sortie JSON
-python run.py --location "Montérégie" --property-type "SingleFamilyHome" --table-name "monteregie_houses" --output-format json --output-file "monteregie_houses.json"
-
-# Mode debug pour les plex à Laval
-python run.py --location "Laval" --property-type "Plex" --table-name "laval_plex" --debug
-```
-
-## 🎯 Configuration
-
-### 📁 Fichier de Configuration
-
-Le pipeline utilise un fichier de configuration YAML (`config/config.yml`) pour définir tous les paramètres :
-
-```yaml
-# Configuration de la base de données MongoDB
-database:
-  server_url: "localhost:27017"
-  connection_string: "mongodb://localhost:27017"
-  database_name: "real_estate_analytics"
-
-  # Noms des collections MongoDB
-  properties_collection: "properties_2024" # Collection des propriétés
-  summaries_collection: "summaries_2024" # Collection des résumés
-  logs_collection: "extraction_logs_2024" # Collection des logs
-
-  # Options de connexion avancées
-  max_pool_size: 100
-  min_pool_size: 0
-  server_selection_timeout_ms: 5000
-  connect_timeout_ms: 5000
-  socket_timeout_ms: 5000
-
-# Configuration Centris
-centris:
-  locations:
-    - "Montréal"
-    - "Laval"
-    - "Montérégie"
-
-  property_types:
-    - "SingleFamilyHome"
-    - "Condo"
-    - "Plex"
-
-  price_range:
-    min: 100000
-    max: 5000000
-
-# Configuration des performances
-performance:
-  batch_size: 25
-  max_concurrent_requests: 5
-  max_retries: 3
-  retry_delay: 5
-
-# Configuration du logging
-logging:
-  level: "INFO"
-  file: "logs/pipeline.log"
-  format: "json"
-```
-
-### 🔑 Variables d'Environnement
-
-Vous pouvez aussi utiliser des variables d'environnement (`.env`) :
-
-```bash
-# Noms des collections MongoDB
-MONGODB_PROPERTIES_COLLECTION=properties_2024
-MONGODB_SUMMARIES_COLLECTION=summaries_2024
-MONGODB_LOGS_COLLECTION=extraction_logs_2024
-
-# Base de données
-MONGODB_DATABASE_NAME=real_estate_analytics
-MONGODB_CONNECTION_STRING=mongodb://localhost:27017
-```
-
-### 📊 Organisation des Collections
-
-Le pipeline crée automatiquement plusieurs collections dans MongoDB :
-
-- **`properties_collection`** : Propriétés complètes avec tous les détails
-- **`summaries_collection`** : Résumés des propriétés (pour la recherche rapide)
-- **`logs_collection`** : Logs d'extraction et de traitement
-
-**Exemples d'organisation :**
-
-```yaml
-# Par année
-database:
-  database_name: "real_estate_analytics"
-  properties_collection: "properties_2024"
-  summaries_collection: "summaries_2024"
-  logs_collection: "logs_2024"
-
-# Par région
-database:
-  database_name: "real_estate_analytics"
-  properties_collection: "montreal_properties"
-  summaries_collection: "montreal_summaries"
-  logs_collection: "montreal_logs"
-
-# Par type de propriété
-database:
-  database_name: "real_estate_analytics"
-  properties_collection: "condos_2024"
-  summaries_collection: "condos_summaries_2024"
-  logs_collection: "condos_logs_2024"
+# Tests d'intégration
+python tests/run_integration_tests.py
 ```
 
 ## 📊 Modèles de Données
 
-### Property (Propriété complète)
+### **SearchQuery**
 
 ```python
-from src.models.property import Property, PropertyType, PropertyStatus
-
-property_data = Property(
-    id="MLS123456",
-    type=PropertyType.SINGLE_FAMILY_HOME,
-    status=PropertyStatus.FOR_SALE,
-    address=Address(
-        street="123 Main St",
-        city="Montréal",
-        region="Québec"
-    ),
-    financial=FinancialInfo(
-        price=450000,
-        municipal_tax=2500
-    ),
-    features=PropertyFeatures(
-        bedrooms=3,
-        bathrooms=2
-    )
-)
+class SearchQuery(BaseModel):
+    locations: List[LocationConfig]
+    property_types: List[PropertyType]
+    price_min: Optional[float] = None
+    price_max: Optional[float] = None
 ```
 
-## 🔍 Extraction des Données
-
-### Processus d'Extraction
-
-1. **🚀 Initialisation** : Configuration de la session et authentification
-2. **🔍 Recherche** : Construction des requêtes et pagination
-3. **📋 Extraction des résumés** : Parsing des pages de résultats
-4. **🔎 Extraction des détails** : Récupération des informations complètes
-5. **✅ Validation** : Vérification de la qualité des données
-6. **💾 Sauvegarde** : Stockage en base MongoDB
-
-### Gestion des Erreurs
+### **LocationConfig**
 
 ```python
-from src.extractors.centris_extractor import CentrisExtractionError
-
-try:
-    summaries = await extractor.extract_summaries(search_query)
-except CentrisExtractionError as e:
-    logger.error(f"Erreur d'extraction: {e}")
-    # Gestion de l'erreur et retry automatique
+class LocationConfig(BaseModel):
+    type: str  # "GeographicArea" ou "CityDistrict"
+    value: str  # Nom de la localisation
+    type_id: Union[str, int]  # ID Centris (string pour GeographicArea, int pour CityDistrict)
 ```
 
-## 🗄️ Base de Données
-
-### Collections MongoDB
-
-- **properties** : Propriétés complètes avec tous les détails
-- **property_summaries** : Résumés pour la recherche rapide
-- **extraction_logs** : Logs d'extraction et métriques
-
-### Requêtes d'Exemple
+### **PropertySummary**
 
 ```python
-from src.services.database_service import DatabaseService
-
-db = DatabaseService(config.database)
-
-# Propriétés par localisation
-properties = db.get_properties_by_location("Montréal", "Québec")
-
-# Propriétés par type
-condos = db.get_properties_by_type("SellCondo")
-
-# Propriétés récentes
-recent = db.get_recent_properties(hours=24)
-
-# Statistiques d'extraction
-stats = db.get_extraction_stats(source="Centris", days=7)
+class PropertySummary(BaseModel):
+    id: str
+    address: Address
+    price: Optional[float]
+    type: PropertyType
+    image_url: Optional[str]
+    url: Optional[str]
+    source: str = "Centris"
 ```
 
-## 📈 Monitoring et Observabilité
+## 🔧 Configuration Avancée
 
-### Logs Structurés
+### **Gestion des Timeouts**
+
+```yaml
+centris:
+  request_timeout: 30 # secondes
+  max_retries: 3
+  retry_delay: 1
+```
+
+### **Limitation des Ressources**
+
+```yaml
+pipeline:
+  max_workers: 4 # Nombre de workers concurrents
+  batch_size: 10 # Taille des lots de traitement
+```
+
+### **Logging**
+
+```yaml
+pipeline:
+  log_level: "INFO" # DEBUG, INFO, WARNING, ERROR
+  log_file: "logs/pipeline.log"
+  log_format: "json" # json ou text
+```
+
+## 📈 Performance
+
+### **Métriques Typiques**
+
+- **Extraction de résumés** : 8-20 propriétés par page
+- **Pagination** : Jusqu'à 7+ pages par recherche
+- **Débit** : 138+ propriétés en recherche multiple
+- **Temps de réponse** : 1-2 secondes par page
+
+### **Optimisations**
+
+- Gestion asynchrone des requêtes
+- Pool de workers configurable
+- Retry automatique avec backoff
+- Validation des données en streaming
+
+## 🚨 Gestion des Erreurs
+
+### **Types d'Erreurs Gérées**
+
+- ✅ Timeouts de requêtes
+- ✅ Erreurs réseau temporaires
+- ✅ Données HTML malformées
+- ✅ Limites de rate limiting
+- ✅ Erreurs de validation des données
+
+### **Stratégies de Récupération**
+
+- Retry automatique avec délai progressif
+- Fallback sur des sélecteurs alternatifs
+- Logging détaillé pour le débogage
+- Graceful degradation des fonctionnalités
+
+## 🔄 Workflow d'Extraction
+
+```
+1. 🔧 Initialisation
+   ├── Chargement de la configuration
+   ├── Création des composants
+   └── Validation des paramètres
+
+2. 🔍 Recherche
+   ├── Construction de la requête
+   ├── Appel à l'API Centris
+   └── Gestion de la pagination
+
+3. 📊 Extraction
+   ├── Parsing du HTML
+   ├── Extraction des résumés
+   └── Validation des données
+
+4. 💾 Sauvegarde
+   ├── Validation finale
+   ├── Sauvegarde MongoDB
+   └── Logging des résultats
+```
+
+## 📝 Logs et Monitoring
+
+### **Format des Logs**
 
 ```json
 {
-  "timestamp": "2024-01-15T10:30:00Z",
+  "timestamp": "2025-08-22T04:40:41.517661Z",
   "level": "info",
-  "event": "Extraction des résumés",
-  "location": "Montérégie",
-  "property_type": "SingleFamilyHome",
-  "count": 45,
-  "duration_ms": 1250
+  "event": "🏠 Extraction réussie: 8 propriétés",
+  "search_query": "Montérégie - Plex",
+  "pages_processed": 1,
+  "properties_found": 8
 }
 ```
 
-### Métriques de Performance
+### **Niveaux de Log**
 
-- Temps d'exécution par étape
-- Nombre de propriétés traitées
-- Taux de succès/échec
-- Utilisation des ressources
-
-## 🧪 Tests
-
-### Exécution des Tests
-
-```bash
-# Tests unitaires
-pytest tests/unit/
-
-# Tests d'intégration
-pytest tests/integration/
-
-# Tests complets avec couverture
-pytest --cov=src --cov-report=html
-
-# Tests de performance
-pytest tests/performance/ -m "slow"
-```
-
-## 🚀 Déploiement
-
-### Docker
-
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-CMD ["python", "run.py"]
-```
-
-### Kubernetes
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: real-estate-pipeline
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: real-estate-pipeline
-  template:
-    metadata:
-      labels:
-        app: real-estate-pipeline
-    spec:
-      containers:
-        - name: pipeline
-          image: real-estate-pipeline:latest
-          env:
-            - name: MONGODB_URL
-              value: "mongodb://mongodb:27017"
-          args:
-            - "--location"
-            - "Montréal"
-            - "--property-type"
-            - "Condo"
-```
-
-### Cron Job
-
-```bash
-# Ajouter à crontab pour exécution quotidienne
-0 2 * * * cd /path/to/pipeline && python run.py --location "Montréal" >> logs/cron.log 2>&1
-```
-
-## 🔒 Sécurité
-
-### Bonnes Pratiques
-
-- Rotation des User-Agents
-- Gestion des sessions avec timeouts
-- Validation des données d'entrée
-- Logs sans informations sensibles
-- Authentification MongoDB sécurisée
-
-## 📚 API Reference
-
-### Classes Principales
-
-- `PipelineExecutor` : Exécuteur principal du pipeline
-- `Property` : Modèle de propriété immobilière
-- `CentrisExtractor` : Extracteur pour Centris.ca
-- `DatabaseService` : Service de gestion de la base de données
-
-### Méthodes Clés
-
-```python
-# Pipeline
-executor = PipelineExecutor(args)
-result = await executor.run_pipeline()
-
-# Extraction
-await extractor.extract_summaries(search_query)
-await extractor.extract_details(property_url)
-
-# Base de données
-db_service.save_property(property_data)
-db_service.get_properties_by_location(city, region)
-```
+- **DEBUG** : Détails techniques et débogage
+- **INFO** : Informations générales et métriques
+- **WARNING** : Avertissements non critiques
+- **ERROR** : Erreurs nécessitant une attention
 
 ## 🤝 Contribution
 
-### Guide de Contribution
+### **Structure du Code**
 
-1. Fork le repository
-2. Créer une branche feature (`git checkout -b feature/amazing-feature`)
-3. Commit les changements (`git commit -m 'Add amazing feature'`)
-4. Push vers la branche (`git push origin feature/amazing-feature`)
-5. Ouvrir une Pull Request
+- **Type hints** : Utilisation complète des annotations Python
+- **Docstrings** : Documentation claire de chaque fonction
+- **Tests** : Couverture complète des fonctionnalités
+- **Logging** : Traçabilité de toutes les opérations
 
-### Standards de Code
+### **Standards de Code**
 
-- **Formatage** : Black pour le formatage automatique
-- **Linting** : Flake8 pour la qualité du code
-- **Types** : MyPy pour le typage statique
-- **Tests** : Pytest avec couverture de code
+- **PEP 8** : Style de code Python
+- **Black** : Formatage automatique
+- **isort** : Organisation des imports
+- **mypy** : Vérification des types
 
-```bash
-# Formatage automatique
-black src/ tests/
+## 📚 Ressources
 
-# Vérification du code
-flake8 src/ tests/
-mypy src/
+### **Documentation Centris**
 
-# Tests
-pytest --cov=src --cov-report=html
-```
+- [API Centris](https://www.centris.ca)
+- [Structure des données](docs/centris_structure.md)
 
-## 📄 Licence
+### **Technologies Utilisées**
 
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+- **asyncio** : Programmation asynchrone
+- **Pydantic** : Validation des données
+- **BeautifulSoup** : Parsing HTML
+- **structlog** : Logging structuré
+- **pymongo** : Interface MongoDB
 
 ## 🆘 Support
 
-### Documentation
+### **Problèmes Courants**
 
-- [Guide d'installation](docs/INSTALLATION.md)
-- [Guide d'utilisation](docs/USAGE.md)
-- [API Reference](docs/API.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
+1. **Timeout des requêtes** : Augmenter `request_timeout`
+2. **Erreurs de validation** : Vérifier la configuration YAML
+3. **Problèmes de réseau** : Vérifier la connectivité et les proxies
 
-### Communauté
+### **Débogage**
 
-- [Issues GitHub](https://github.com/username/repo/issues)
-- [Discussions](https://github.com/username/repo/discussions)
-- [Wiki](https://github.com/username/repo/wiki)
+- Activer le niveau de log `DEBUG`
+- Vérifier les logs dans `logs/`
+- Utiliser les scripts de test pour isoler les problèmes
 
 ---
 
-**🚀 Pipeline autonome développé avec ❤️ par l'équipe Real Estate Analysis**
+## 🎉 Résumé
 
-### **Validation des Résultats de Recherche**
+Ce pipeline offre une solution robuste et maintenable pour l'extraction de données immobilières depuis Centris.ca. Avec son architecture modulaire, ses tests complets et sa documentation détaillée, il est prêt pour la production et l'évolution future.
 
-Le pipeline inclut une **validation intelligente** des résultats de la première page pour s'assurer que les données extraites correspondent bien aux critères de recherche :
-
-#### **Processus de Validation**
-
-1. **Extraction de la première page** → Récupération des résultats initiaux
-2. **Validation des localisations** → Vérification ville/région
-3. **Validation des types** → Vérification type de propriété
-4. **Calcul du score** → Pourcentage de correspondance pour chaque critère
-5. **Décision finale** → Continuation ou arrêt selon les seuils
-
-#### **Types de Validation**
-
-##### **1. Validation des Localisations** 🌍
-
-- **Objectif** : Vérifier que les propriétés sont dans les bonnes villes/régions
-- **Seuil** : 70% des propriétés doivent correspondre
-- **Critères** : Correspondance partielle des noms de localisation
-
-##### **2. Validation des Types de Propriétés** 🏠
-
-- **Objectif** : Vérifier que les propriétés sont du bon type
-- **Seuil** : 70% des propriétés doivent correspondre
-- **Critères** : Correspondance des types (Condo, House, Plex, etc.)
-- **Bonus** : Distribution des types trouvés
-
-#### **Seuils de Validation**
-
-- **Seuil minimum** : 70% des propriétés doivent correspondre pour chaque critère
-- **Validation globale** : Les deux validations doivent réussir
-- **En dessous du seuil** : Pipeline s'arrête avec avertissement détaillé
-- **Au-dessus du seuil** : Pipeline continue normalement
-
-#### **Critères Validés**
-
-##### **Validation des Résultats de Recherche**
-
-- ✅ **Localisation** : Ville/région correspond aux paramètres
-- ✅ **Type de propriété** : Type correspond aux critères
-- ✅ **Distribution des types** : Statistiques des types trouvés
-
-##### **Validation des Données de Propriétés**
-
-- ✅ **Régions québécoises** : Validation contre la liste des régions connues
-- ✅ **Codes postaux** : Format canadien valide (A1A 1A1)
-- ✅ **Prix immobiliers** : Fourchette raisonnable (10k$ - 50M$)
-- ✅ **Coordonnées GPS** : Limites géographiques du Québec
-- ✅ **ID de propriété** : Format et unicité
-- ✅ **Nettoyage des textes** : Suppression caractères de contrôle
-
-#### **Exemple de Validation Complète**
-
-```bash
-🔍 Validation des localisations pour 20 propriétés...
-📊 Validation localisations: 18/20 propriétés correspondent (90.0%)
-
-🔍 Validation des types de propriétés pour 20 propriétés...
-📊 Validation types: 19/20 propriétés correspondent (95.0%)
-📊 Distribution des types: Condo: 15, House: 4, Plex: 1
-
-✅ Validation des résultats réussie
-```
-
-#### **Gestion des Erreurs Détaillée**
-
-```bash
-🔍 Validation des localisations pour 20 propriétés...
-📊 Validation localisations: 8/20 propriétés correspondent (40.0%)
-⚠️ Faible taux de correspondance des localisations (40.0%)
-
-🔍 Validation des types de propriétés pour 20 propriétés...
-📊 Validation types: 12/20 propriétés correspondent (60.0%)
-⚠️ Faible taux de correspondance des types (60.0%)
-
-⚠️ Validation des localisations échouée
-⚠️ Validation des types de propriétés échouée
-⚠️ Vérifiez les paramètres de recherche
-```
-
-### **Configuration de la Validation**
-
-```yaml
-# Dans config.yml
-validation:
-  threshold: 0.7 # Seuil de validation (70%)
-  strict_mode: false # Mode strict (arrêt immédiat si échec)
-  log_details: true # Logs détaillés de validation
-```
-
-### **Avantages de la Validation**
-
-🎯 **Qualité des données** : S'assure que les résultats sont pertinents  
-🛡️ **Prévention des erreurs** : Évite l'extraction de données incorrectes  
-📊 **Transparence** : Logs détaillés du processus de validation  
-⚡ **Performance** : Arrêt rapide si les résultats sont incohérents  
-🔧 **Maintenance** : Facilite le débogage des problèmes d'extraction
+**🚀 Prêt à extraire des données immobilières à grande échelle !**

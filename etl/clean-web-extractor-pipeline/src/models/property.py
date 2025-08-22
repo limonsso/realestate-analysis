@@ -8,8 +8,7 @@ from typing import List, Optional, Dict, Any, Union, TYPE_CHECKING
 from pydantic import BaseModel, Field, validator, computed_field
 from enum import Enum
 
-if TYPE_CHECKING:
-    from config.settings import LocationConfig
+from config.settings import LocationConfig
 
 
 class PropertyType(str, Enum):
@@ -158,7 +157,8 @@ class Property(BaseModel):
     id: Optional[str] = Field(None, description="ID unique de la propriété")
     
     # Informations de base
-    type: PropertyType = Field(..., description="Type de propriété")
+    type: str = Field(..., description="Type spécifique de la propriété (ex: Triplex, Duplex)")
+    category: PropertyType = Field(..., description="Catégorie générale de la propriété (ex: Plex)")
     status: PropertyStatus = Field(PropertyStatus.FOR_SALE, description="Statut de la propriété")
     
     # Adresse et localisation

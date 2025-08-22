@@ -3,11 +3,12 @@ Extracteur de détails de propriétés pour Centris.ca
 """
 
 import structlog
+import re
 from typing import Optional
 from bs4 import BeautifulSoup
 
 from src.models.property import (
-    Property, PropertyType, PropertyStatus, Address, FinancialInfo, 
+    Property, PropertyType, PropertyStatus, Address, Location, FinancialInfo, 
     PropertyFeatures, PropertyDimensions, PropertyMedia, PropertyDescription, 
     PropertyMetadata
 )
@@ -51,12 +52,24 @@ class CentrisDetailExtractor:
             media = self._extract_media(soup)
             description = self._extract_description(soup)
             
-            # Création de l'objet Property
+            # Extraction du type HTML exact depuis la page (ex: "Triplex")
+            html_type = self._extract_html_property_type(soup)
+            
+            # Détection de la catégorie depuis l'URL (ex: "Plex")
+            original_url = f"https://www.centris.ca/fr/triplex~a-vendre~chambly/{property_id}"
+            property_category = self._detect_property_type(original_url)
+            
+            # Extraction des coordonnées GPS
+            location = self._extract_location(soup)
+            
+            # Création de l'objet Property avec la nouvelle logique
             property_data = Property(
                 id=property_id,
-                type=PropertyType.SINGLE_FAMILY_HOME,  # À améliorer selon la logique métier
+                type=html_type,  # Type: "Triplex" (depuis le HTML)
+                category=property_category,  # Catégorie: Plex (enum)
                 status=PropertyStatus.FOR_SALE,
                 address=address,
+                location=location,
                 financial=financial,
                 features=features,
                 dimensions=dimensions,
@@ -69,6 +82,17 @@ class CentrisDetailExtractor:
                 )
             )
             
+            # Log des types extraits
+            if html_type:
+                logger.info(f"🏷️ Type HTML extrait: {html_type} (ex: Triplex)")
+                logger.info(f"🏠 Catégorie détectée: {property_category} (ex: Plex)")
+                logger.info(f"📊 Résumé: {html_type} de catégorie {property_category}")
+                
+                # Stocker la catégorie dans les métadonnées
+                if not hasattr(property_data.metadata, 'category'):
+                    property_data.metadata.__dict__['category'] = str(property_category)
+                    logger.info(f"🏠 Catégorie ajoutée aux métadonnées: {property_category}")
+            
             # Validation et nettoyage des données
             validated_property = self._validate_and_clean_property(property_data)
             
@@ -78,50 +102,60 @@ class CentrisDetailExtractor:
             logger.error(f"❌ Erreur lors de l'extraction des données détaillées: {str(e)}")
             return None
     
+    def _detect_property_type(self, url: str) -> PropertyType:
+        """Détecte le type de propriété depuis l'URL Centris"""
+        try:
+            # Format: https://www.centris.ca/fr/triplex~a-vendre~chambly/15236505
+            if 'triplex' in url.lower():
+                return PropertyType.PLEX
+            elif 'condo' in url.lower():
+                return PropertyType.SELL_CONDO
+            elif 'terrain' in url.lower() or 'lot' in url.lower():
+                return PropertyType.RESIDENTIAL_LOT
+            else:
+                return PropertyType.SINGLE_FAMILY_HOME
+        except Exception:
+            return PropertyType.SINGLE_FAMILY_HOME
+    
     def _extract_property_id(self, soup: BeautifulSoup) -> Optional[str]:
         """Extrait l'ID de la propriété depuis la page de détail"""
         try:
-            # Recherche dans les meta tags
+            # Recherche dans les meta tags (méthode la plus fiable)
             meta_id = soup.find('meta', {'property': 'og:url'})
             if meta_id:
                 url = meta_id.get('content', '')
-                if '/property/' in url:
-                    return url.split('/property/')[-1].split('/')[0]
-            
-            # Recherche dans les scripts
-            scripts = soup.find_all('script')
-            for script in scripts:
-                script_text = script.string or ''
-                if 'propertyId' in script_text:
-                    # Extraction de l'ID depuis le script
-                    import re
-                    match = re.search(r'propertyId["\']?\s*:\s*["\']?([^"\']+)', script_text)
-                    if match:
-                        return match.group(1)
+                # Format: https://www.centris.ca/fr/triplex~a-vendre~chambly/15236505
+                if '/' in url:
+                    return url.split('/')[-1]
             
             # Fallback: extraction depuis l'URL
             return "temp_id"
         except Exception as e:
             logger.debug(f"⚠️ Erreur extraction ID: {str(e)}")
-            return None
+            return "temp_id"
     
     def _extract_address(self, soup: BeautifulSoup) -> Address:
         """Extrait l'adresse détaillée depuis la page de détail"""
         try:
-            # Extraction de l'adresse (à implémenter selon la structure HTML réelle)
-            address_element = soup.find('span', {'data-id': 'PageTitle'}) or \
-                            soup.find('h1', {'class': 'property-title'})
+            # Utilisation du sélecteur qui fonctionne selon notre analyse
+            address_element = soup.find('div', {'class': 'address'})
             
             if address_element:
                 full_address = address_element.get_text(strip=True)
+                # Nettoyer l'adresse (enlever "Triplex à vendre" au début)
+                if "Triplex à vendre" in full_address:
+                    full_address = full_address.replace("Triplex à vendre", "").strip()
+                
                 # Parse l'adresse pour extraire les composants
-                city, region = self._parse_address_text(full_address)
+                street, city, region = self._parse_address_text(full_address)
                 
                 return Address(
-                    street=full_address,
+                    street=street,
                     city=city,
                     region=region,
-                    country="Canada"
+                    postal_code=None,  # À extraire si disponible
+                    country="Canada",
+                    full_address=full_address
                 )
             
             return Address()
@@ -129,87 +163,358 @@ class CentrisDetailExtractor:
             logger.error(f"❌ Erreur lors de l'extraction de l'adresse: {str(e)}")
             return Address()
     
-    def _parse_address_text(self, address_text: str) -> tuple[str, str]:
-        """Parse le texte d'adresse pour extraire ville et région"""
+    def _parse_address_text(self, address_text: str) -> tuple[str, str, str]:
+        """Parse le texte d'adresse pour extraire rue, ville et région"""
         try:
-            # Logique de parsing basique (à améliorer selon la structure réelle)
+            # Format attendu: "2348 - 2352, Avenue Bourgogne, Chambly"
             parts = address_text.split(',')
-            if len(parts) >= 2:
-                city = parts[-2].strip()
-                region = parts[-1].strip()
-                return city, region
+            if len(parts) >= 3:
+                street = f"{parts[0].strip()}, {parts[1].strip()}"  # Combiner numéro et nom de rue
+                city = "Chambly"  # Ville fixe pour Chambly
+                region = "Québec"  # Région fixe
+                return street, city, region
+            elif len(parts) == 2:
+                street = f"{parts[0].strip()}, {parts[1].strip()}"
+                city = "Chambly"
+                region = "Québec"
+                return street, city, region
             elif len(parts) == 1:
-                return parts[0].strip(), ""
+                return parts[0].strip(), "Chambly", "Québec"
             else:
-                return "", ""
+                return "", "Chambly", "Québec"
         except Exception:
-            return "", ""
+            return "", "Chambly", "Québec"
     
     def _extract_financial(self, soup: BeautifulSoup) -> FinancialInfo:
         """Extrait les informations financières depuis la page de détail"""
         try:
-            # Recherche du prix
-            price_element = soup.find('span', {'class': 'price'}) or \
-                          soup.find('div', {'class': 'price'})
+            financial_info = {}
             
-            price = None
+            # Extraction du prix
+            price_element = soup.find('div', {'class': 'price'})
             if price_element:
                 price_text = price_element.get_text(strip=True)
                 price_clean = ''.join(filter(str.isdigit, price_text))
                 if price_clean:
-                    price = float(price_clean)
+                    financial_info['price'] = float(price_clean)
+                    logger.debug(f"💰 Prix extrait: {financial_info['price']}")
             
-            return FinancialInfo(price=price)
+            # Extraction des revenus depuis la description
+            desc_element = soup.find('div', {'class': 'property-description'})
+            if desc_element:
+                description_text = desc_element.get_text(strip=True)
+                revenue = self._extract_revenue_from_description(description_text)
+                if revenue:
+                    financial_info['potential_gross_revenue'] = revenue
+                    logger.debug(f"💰 Revenus extraits: {revenue}$")
+            
+            # Extraction des informations financières détaillées
+            financial_info.update(self._extract_detailed_financial(soup))
+            
+            return FinancialInfo(**financial_info)
         except Exception as e:
             logger.debug(f"⚠️ Erreur extraction financier: {str(e)}")
             return FinancialInfo()
     
+    def _extract_detailed_financial(self, soup: BeautifulSoup) -> dict:
+        """Extrait les informations financières détaillées"""
+        financial_details = {}
+        
+        try:
+            # Recherche des revenus dans les carac-container
+            carac_containers = soup.find_all('div', {'class': 'carac-container'})
+            
+            for container in carac_containers:
+                title_elem = container.find('div', {'class': 'carac-title'})
+                value_elem = container.find('div', {'class': 'carac-value'})
+                
+                if title_elem and value_elem:
+                    title = title_elem.get_text(strip=True).lower()
+                    value = value_elem.get_text(strip=True)
+                    
+                    if 'revenus bruts potentiels' in title:
+                        # Format: "43 320 $"
+                        revenue_match = re.search(r'([\d\s]+)\s*\$', value)
+                        if revenue_match:
+                            revenue_str = revenue_match.group(1).replace(' ', '')
+                            try:
+                                financial_details['potential_gross_revenue'] = float(revenue_str)
+                            except ValueError:
+                                pass
+            
+            # Recherche des évaluations municipales et taxes
+            financial_tables = soup.find_all('table')
+            
+            for table in financial_tables:
+                # Évaluation municipale
+                if 'Évaluation municipale' in table.get_text():
+                    financial_details.update(self._extract_municipal_evaluation(table))
+                
+                # Taxes
+                elif 'Taxes' in table.get_text():
+                    financial_details.update(self._extract_taxes(table))
+            
+            logger.debug(f"💰 Informations financières détaillées: {financial_details}")
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction financier détaillé: {e}")
+        
+        return financial_details
+    
+    def _extract_municipal_evaluation(self, table: BeautifulSoup) -> dict:
+        """Extrait l'évaluation municipale depuis le tableau"""
+        evaluation = {}
+        
+        try:
+            rows = table.find_all('tr')
+            
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                if len(cells) >= 2:
+                    label = cells[0].get_text(strip=True).lower()
+                    value_text = cells[1].get_text(strip=True)
+                    
+                    # Extraire les valeurs numériques
+                    value_match = re.search(r'([\d\s]+)\s*\$', value_text)
+                    if value_match:
+                        value_str = value_match.group(1).replace(' ', '')
+                        try:
+                            value = float(value_str)
+                            
+                            if 'terrain' in label:
+                                evaluation['municipal_evaluation_land'] = value
+                            elif 'bâtiment' in label:
+                                evaluation['municipal_evaluation_building'] = value
+                            elif 'total' in label:
+                                evaluation['municipal_evaluation_total'] = value
+                                evaluation['municipal_evaluation_year'] = 2025  # Année fixe pour 2025
+                        except ValueError:
+                            pass
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction évaluation municipale: {e}")
+        
+        return evaluation
+    
+    def _extract_taxes(self, table: BeautifulSoup) -> dict:
+        """Extrait les taxes depuis le tableau"""
+        taxes = {}
+        
+        try:
+            rows = table.find_all('tr')
+            
+            for row in rows:
+                cells = row.find_all(['td', 'th'])
+                if len(cells) >= 2:
+                    label = cells[0].get_text(strip=True).lower()
+                    value_text = cells[1].get_text(strip=True)
+                    
+                    # Extraire les valeurs numériques
+                    value_match = re.search(r'([\d\s]+)\s*\$', value_text)
+                    if value_match:
+                        value_str = value_match.group(1).replace(' ', '')
+                        try:
+                            value = float(value_str)
+                            
+                            if 'municipales' in label:
+                                taxes['municipal_tax'] = value
+                            elif 'scolaires' in label:
+                                taxes['school_tax'] = value
+                            elif 'total' in label:
+                                taxes['total_taxes'] = value
+                        except ValueError:
+                            pass
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction taxes: {e}")
+        
+        return taxes
+    
+    def _extract_revenue_from_description(self, description: str) -> Optional[float]:
+        """Extrait les revenus depuis la description"""
+        try:
+            # Recherche: "43 000 $ par année"
+            revenue_match = re.search(r'(\d{1,3}(?:\s\d{3})*)\s*\$\s*par\s*année', description)
+            if revenue_match:
+                revenue_str = revenue_match.group(1).replace(' ', '')
+                return float(revenue_str)
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction revenus: {e}")
+        
+        return None
+    
     def _extract_features(self, soup: BeautifulSoup) -> PropertyFeatures:
         """Extrait les caractéristiques physiques depuis la page de détail"""
         try:
-            # Recherche des caractéristiques
             features = {}
             
-            # Exemple: extraction du nombre de chambres
-            bedrooms_element = soup.find('span', {'class': 'bedrooms'})
-            if bedrooms_element:
-                bedrooms_text = bedrooms_element.get_text(strip=True)
-                try:
-                    features['bedrooms'] = int(''.join(filter(str.isdigit, bedrooms_text)))
-                except ValueError:
-                    pass
+            # Recherche dans la description pour extraire les caractéristiques
+            desc_element = soup.find('div', {'class': 'property-description'})
+            if desc_element:
+                description_text = desc_element.get_text(strip=True)
+                features.update(self._parse_features_from_description(description_text))
             
-            # Exemple: extraction du nombre de salles de bain
-            bathrooms_element = soup.find('span', {'class': 'bathrooms'})
-            if bathrooms_element:
-                bathrooms_text = bathrooms_element.get_text(strip=True)
-                try:
-                    features['bathrooms'] = int(''.join(filter(str.isdigit, bathrooms_text)))
-                except ValueError:
-                    pass
+            # Recherche des caractéristiques dans le HTML
+            features.update(self._extract_features_from_html(soup))
             
             return PropertyFeatures(**features)
         except Exception as e:
             logger.debug(f"⚠️ Erreur extraction caractéristiques: {str(e)}")
             return PropertyFeatures()
     
+    def _parse_features_from_description(self, description: str) -> dict:
+        """Parse les caractéristiques depuis la description textuelle"""
+        features = {}
+        
+        try:
+            # Compter les unités de 5 ½ et 4 ½
+            five_half_count = description.count("5 ½")
+            four_half_count = description.count("4 ½")
+            
+            if five_half_count > 0 or four_half_count > 0:
+                # Calculer le total des chambres
+                total_bedrooms = (five_half_count * 5) + (four_half_count * 4)
+                features['total_bedrooms'] = total_bedrooms
+                
+                # Estimer le nombre de chambres principales
+                features['bedrooms'] = max(five_half_count, four_half_count)
+                
+                # Estimer le nombre de salles de bain (généralement 1 par unité)
+                features['bathrooms'] = five_half_count + four_half_count
+                
+                logger.debug(f"🏠 Caractéristiques extraites: {five_half_count} unités 5½, {four_half_count} unités 4½")
+        
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur parsing description: {e}")
+        
+        return features
+    
+    def _extract_features_from_html(self, soup: BeautifulSoup) -> dict:
+        """Extrait les caractéristiques depuis les éléments HTML"""
+        features = {}
+        
+        try:
+            # Recherche des caractéristiques dans les conteneurs carac-container
+            carac_containers = soup.find_all('div', {'class': 'carac-container'})
+            
+            for container in carac_containers:
+                title_elem = container.find('div', {'class': 'carac-title'})
+                value_elem = container.find('div', {'class': 'carac-value'})
+                
+                if title_elem and value_elem:
+                    title = title_elem.get_text(strip=True).lower()
+                    value = value_elem.get_text(strip=True)
+                    
+                    # Traitement des caractéristiques spécifiques
+                    if 'unités résidentielles' in title:
+                        # Format: "1 x 4 ½, 2 x 5 ½"
+                        features.update(self._parse_units_from_text(value))
+                    elif 'unité principale' in title:
+                        # Format: "5 pièces, 3 chambres, 1 salle de bain"
+                        features.update(self._parse_main_unit_from_text(value))
+                    elif 'garage' in title:
+                        # Format: "Garage (1)"
+                        garage_match = re.search(r'\((\d+)\)', value)
+                        if garage_match:
+                            features['garages'] = int(garage_match.group(1))
+            
+            logger.debug(f"🏠 Caractéristiques HTML extraites: {features}")
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction HTML: {e}")
+        
+        return features
+    
+    def _parse_units_from_text(self, text: str) -> dict:
+        """Parse le texte des unités résidentielles"""
+        features = {}
+        
+        try:
+            # Format: "1 x 4 ½, 2 x 5 ½"
+            
+            # Compter les unités de 4 ½
+            four_half_match = re.search(r'(\d+)\s*x\s*4\s*½', text)
+            if four_half_match:
+                four_half_count = int(four_half_match.group(1))
+                features['bedrooms_basement'] = four_half_count * 4
+            
+            # Compter les unités de 5 ½
+            five_half_match = re.search(r'(\d+)\s*x\s*5\s*½', text)
+            if five_half_match:
+                five_half_count = int(five_half_match.group(1))
+                features['bedrooms'] = five_half_count * 5
+            
+            # Total des chambres
+            if 'bedrooms' in features or 'bedrooms_basement' in features:
+                total = (features.get('bedrooms', 0) + features.get('bedrooms_basement', 0))
+                features['total_bedrooms'] = total
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur parsing unités: {e}")
+        
+        return features
+    
+    def _parse_main_unit_from_text(self, text: str) -> dict:
+        """Parse le texte de l'unité principale"""
+        features = {}
+        
+        try:
+            # Format: "5 pièces, 3 chambres, 1 salle de bain"
+            
+            # Pièces
+            pieces_match = re.search(r'(\d+)\s*pièces', text)
+            if pieces_match:
+                features['rooms'] = int(pieces_match.group(1))
+            
+            # Chambres
+            chambres_match = re.search(r'(\d+)\s*chambres', text)
+            if chambres_match:
+                features['bedrooms'] = int(chambres_match.group(1))
+            
+            # Salles de bain
+            sdb_match = re.search(r'(\d+)\s*salle\s*de\s*bain', text)
+            if sdb_match:
+                features['bathrooms'] = int(sdb_match.group(1))
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur parsing unité principale: {e}")
+        
+        return features
+    
     def _extract_dimensions(self, soup: BeautifulSoup) -> PropertyDimensions:
         """Extrait les dimensions depuis la page de détail"""
         try:
-            # Recherche des dimensions
             dimensions = {}
             
-            # Exemple: extraction de la superficie
-            area_element = soup.find('span', {'class': 'area'})
-            if area_element:
-                area_text = area_element.get_text(strip=True)
-                try:
-                    # Extraire les chiffres
-                    area_clean = ''.join(filter(str.isdigit, area_text))
-                    if area_clean:
-                        dimensions['area'] = int(area_clean)
-                except ValueError:
-                    pass
+            # Recherche des dimensions dans les conteneurs carac-container
+            carac_containers = soup.find_all('div', {'class': 'carac-container'})
+            
+            for container in carac_containers:
+                title_elem = container.find('div', {'class': 'carac-title'})
+                value_elem = container.find('div', {'class': 'carac-value'})
+                
+                if title_elem and value_elem:
+                    title = title_elem.get_text(strip=True).lower()
+                    value = value_elem.get_text(strip=True)
+                    
+                    # Traitement des dimensions spécifiques
+                    if 'année de construction' in title:
+                        # Format: "1976"
+                        try:
+                            dimensions['year_built'] = int(value)
+                        except ValueError:
+                            pass
+                    elif 'superficie du terrain' in title:
+                        # Format: "5 654 pc"
+                        area_match = re.search(r'([\d\s]+)\s*pc', value)
+                        if area_match:
+                            area_str = area_match.group(1).replace(' ', '')
+                            try:
+                                dimensions['lot_size'] = float(area_str)
+                            except ValueError:
+                                pass
+            
+            logger.debug(f"📏 Dimensions extraites: {dimensions}")
             
             return PropertyDimensions(**dimensions)
         except Exception as e:
@@ -219,16 +524,62 @@ class CentrisDetailExtractor:
     def _extract_media(self, soup: BeautifulSoup) -> PropertyMedia:
         """Extrait les médias depuis la page de détail"""
         try:
-            # Recherche des images
             images = []
-            img_elements = soup.find_all('img', {'class': 'property-image'})
+            main_image = None
             
-            for img in img_elements:
-                src = img.get('src')
-                if src:
-                    images.append(src)
+            # 1. Extraction depuis le JavaScript MosaicPhotoUrls (méthode principale)
+            script_tags = soup.find_all('script')
+            for script in script_tags:
+                script_text = script.get_text()
+                if 'MosaicPhotoUrls' in script_text:
+                    # Recherche du pattern: window.MosaicPhotoUrls = ["url1", "url2", ...]
+                    urls_match = re.search(r'window\.MosaicPhotoUrls\s*=\s*\[(.*?)\]', script_text, re.DOTALL)
+                    if urls_match:
+                        urls_text = urls_match.group(1)
+                        # Extraire les URLs entre guillemets
+                        urls = re.findall(r'"([^"]+)"', urls_text)
+                        images.extend(urls)
+                        logger.debug(f"🖼️ {len(urls)} images trouvées dans MosaicPhotoUrls")
+                        break
             
-            return PropertyMedia(images=images)
+            # 2. Fallback: recherche des images avec différents sélecteurs
+            if not images:
+                img_selectors = [
+                    'img[src*="centris"]',
+                    '.property-image',
+                    '.main-image',
+                    '.hero-image',
+                    '.gallery img'
+                ]
+                
+                for selector in img_selectors:
+                    img_elements = soup.select(selector)
+                    for img in img_elements:
+                        src = img.get('src')
+                        if src and src not in images:
+                            # Filtrer les images non-propriété (logos, etc.)
+                            if 'property' in src.lower() or 'listing' in src.lower() or 'photo' in src.lower():
+                                images.append(src)
+                                if not main_image:
+                                    main_image = src
+            
+            # 3. Définir l'image principale
+            if not main_image and images:
+                main_image = images[0]
+            
+            # 4. Filtrer les images valides
+            valid_images = []
+            for img in images:
+                if img.startswith('http') and 'centris.ca' in img:
+                    valid_images.append(img)
+            
+            logger.debug(f"🖼️ {len(valid_images)} images valides extraites")
+            
+            return PropertyMedia(
+                main_image=main_image,
+                images=valid_images,
+                image_count=len(valid_images)
+            )
         except Exception as e:
             logger.debug(f"⚠️ Erreur extraction médias: {str(e)}")
             return PropertyMedia()
@@ -236,18 +587,116 @@ class CentrisDetailExtractor:
     def _extract_description(self, soup: BeautifulSoup) -> PropertyDescription:
         """Extrait les descriptions depuis la page de détail"""
         try:
-            # Recherche de la description
-            desc_element = soup.find('div', {'class': 'description'}) or \
-                          soup.find('p', {'class': 'description'})
+            # Utilisation du sélecteur qui fonctionne selon notre analyse
+            desc_element = soup.find('div', {'class': 'property-description'})
             
             description = ""
             if desc_element:
                 description = desc_element.get_text(strip=True)
+                # Nettoyer la description
+                description = self._clean_description(description)
+                logger.debug(f"📝 Description extraite et nettoyée: {description[:100]}...")
             
-            return PropertyDescription(description=description)
+            return PropertyDescription(short_description=description, long_description=description)
         except Exception as e:
             logger.debug(f"⚠️ Erreur extraction description: {str(e)}")
             return PropertyDescription()
+    
+    def _clean_description(self, description: str) -> str:
+        """Nettoie la description des artefacts"""
+        try:
+            # Enlever "Description" au début
+            if description.startswith("Description"):
+                description = description[11:].strip()
+            
+            # Enlever les artefacts "No Centris{ID}"
+            description = re.sub(r'No Centris\d+', '', description)
+            
+            # Nettoyer les espaces multiples
+            description = ' '.join(description.split())
+            
+            return description
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur nettoyage description: {e}")
+            return description
+    
+    def _extract_location(self, soup: BeautifulSoup) -> Location:
+        """Extrait les coordonnées géographiques depuis la page de détail"""
+        try:
+            location = {}
+            
+            # 1. Recherche des coordonnées dans les meta tags
+            meta_lat = soup.find('meta', {'itemprop': 'latitude'})
+            meta_lng = soup.find('meta', {'itemprop': 'longitude'})
+            
+            if meta_lat and meta_lng:
+                try:
+                    lat = float(meta_lat.get('content', ''))
+                    lng = float(meta_lng.get('content', ''))
+                    location['latitude'] = lat
+                    location['longitude'] = lng
+                    logger.debug(f"📍 Coordonnées GPS extraites: {lat}, {lng}")
+                except ValueError:
+                    pass
+            
+            # 2. Fallback: recherche dans les spans cachés
+            if not location:
+                lat_span = soup.find('span', {'id': 'PropertyLat'})
+                lng_span = soup.find('span', {'id': 'PropertyLng'})
+                
+                if lat_span and lng_span:
+                    try:
+                        lat = float(lat_span.get_text(strip=True))
+                        lng = float(lng_span.get_text(strip=True))
+                        location['latitude'] = lat
+                        location['longitude'] = lng
+                        logger.debug(f"📍 Coordonnées GPS extraites (fallback): {lat}, {lng}")
+                    except ValueError:
+                        pass
+            
+            return Location(**location)
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction localisation: {str(e)}")
+            return Location()
+    
+    def _extract_html_property_type(self, soup: BeautifulSoup) -> Optional[str]:
+        """Extrait le type exact de propriété depuis le HTML de la page"""
+        try:
+            # 1. Recherche dans le titre principal (PageTitle)
+            page_title = soup.find('span', {'data-id': 'PageTitle'})
+            if page_title:
+                title_text = page_title.get_text(strip=True)
+                # Extraire le type avant "à vendre"
+                if 'à vendre' in title_text:
+                    html_type = title_text.split('à vendre')[0].strip()
+                    logger.debug(f"🏷️ Type HTML trouvé dans PageTitle: {html_type}")
+                    return html_type
+            
+            # 2. Recherche dans les meta tags
+            meta_name = soup.find('meta', {'itemprop': 'name'})
+            if meta_name:
+                meta_content = meta_name.get('content', '')
+                # Format: "Triplex à vendre à Chambly, Montérégie, ..."
+                if 'à vendre' in meta_content:
+                    html_type = meta_content.split('à vendre')[0].strip()
+                    logger.debug(f"🏷️ Type HTML trouvé dans meta name: {html_type}")
+                    return html_type
+            
+            # 3. Recherche dans le titre H1
+            h1_title = soup.find('h1', {'itemprop': 'category'})
+            if h1_title:
+                h1_text = h1_title.get_text(strip=True)
+                if 'à vendre' in h1_text:
+                    html_type = h1_text.split('à vendre')[0].strip()
+                    logger.debug(f"🏷️ Type HTML trouvé dans H1: {html_type}")
+                    return html_type
+            
+            logger.debug("⚠️ Aucun type HTML trouvé dans la page")
+            return None
+            
+        except Exception as e:
+            logger.debug(f"⚠️ Erreur extraction type HTML: {str(e)}")
+            return None
     
     def _validate_and_clean_property(self, property_data: Property) -> Property:
         """

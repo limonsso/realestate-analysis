@@ -35,6 +35,9 @@ location_types:
     description: "Districts de ville (IDs numériques Centris)"
     examples:
       - type: "CityDistrict"
+        value: "Chambly"
+        type_id: 730
+      - type: "CityDistrict"
         value: "Vieux-Montréal"
         type_id: 449
       - type: "CityDistrict"
