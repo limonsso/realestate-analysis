@@ -1,0 +1,135 @@
+# Configuration des IDs Centris pour les localisations
+# Basé sur la structure réelle de l'API Centris
+
+# Types de localisation supportés
+location_types:
+  GeographicArea:
+    description: "Régions géographiques du Québec"
+    examples:
+      - type: "GeographicArea"
+        value: "Montérégie"
+        type_id: "RARA16"
+      - type: "GeographicArea"
+        value: "Laurentides"
+        type_id: "RARA15"
+      - type: "GeographicArea"
+        value: "Lanaudière"
+        type_id: "RARA14"
+      - type: "GeographicArea"
+        value: "Estrie"
+        type_id: "RARA05"
+      - type: "GeographicArea"
+        value: "Mauricie"
+        type_id: "RARA04"
+      - type: "GeographicArea"
+        value: "Chaudière-Appalaches"
+        type_id: "RARA12"
+      - type: "GeographicArea"
+        value: "Montréal (Île)"
+        type_id: "GSGS4621"
+      - type: "GeographicArea"
+        value: "Laval"
+        type_id: "GSGS4622"
+
+  CityDistrict:
+    description: "Districts de ville (IDs numériques Centris)"
+    examples:
+      - type: "CityDistrict"
+        value: "Vieux-Montréal"
+        type_id: 449
+      - type: "CityDistrict"
+        value: "Plateau-Mont-Royal"
+        type_id: 450
+      - type: "CityDistrict"
+        value: "Rosemont-La Petite-Patrie"
+        type_id: 451
+      - type: "CityDistrict"
+        value: "Villeray-Saint-Michel-Parc-Extension"
+        type_id: 452
+      - type: "CityDistrict"
+        value: "Ahuntsic-Cartierville"
+        type_id: 453
+      - type: "CityDistrict"
+        value: "Mercier-Hochelaga-Maisonneuve"
+        type_id: 454
+      - type: "CityDistrict"
+        value: "Côte-des-Neiges-Notre-Dame-de-Grâce"
+        type_id: 455
+      - type: "CityDistrict"
+        value: "Sud-Ouest"
+        type_id: 456
+      - type: "CityDistrict"
+        value: "Verdun"
+        type_id: 457
+      - type: "CityDistrict"
+        value: "Lachine"
+        type_id: 458
+      - type: "CityDistrict"
+        value: "LaSalle"
+        type_id: 459
+      - type: "CityDistrict"
+        value: "Outremont"
+        type_id: 460
+      - type: "CityDistrict"
+        value: "Côte-Saint-Luc"
+        type_id: 461
+      - type: "CityDistrict"
+        value: "Montréal-Ouest"
+        type_id: 462
+      - type: "CityDistrict"
+        value: "Hampstead"
+        type_id: 463
+      - type: "CityDistrict"
+        value: "Westmount"
+        type_id: 464
+      - type: "CityDistrict"
+        value: "Mont-Royal"
+        type_id: 465
+      - type: "CityDistrict"
+        value: "Dollard-des-Ormeaux"
+        type_id: 466
+      - type: "CityDistrict"
+        value: "Pointe-Claire"
+        type_id: 467
+      - type: "CityDistrict"
+        value: "Kirkland"
+        type_id: 468
+      - type: "CityDistrict"
+        value: "Beaconsfield"
+        type_id: 469
+      - type: "CityDistrict"
+        value: "Baie-D'Urfé"
+        type_id: 470
+      - type: "CityDistrict"
+        value: "Sainte-Anne-de-Bellevue"
+        type_id: 471
+      - type: "CityDistrict"
+        value: "Senneville"
+        type_id: 472
+
+# Structure de requête Centris
+request_structure:
+  description: "Structure réelle des requêtes Centris"
+  example:
+    query:
+      UseGeographyShapes: 0
+      FieldsValues:
+        - fieldId: "CityDistrict"
+          value: 449
+        - fieldId: "PropertyType"
+          value: "Plex"
+          valueConditionId: "IsResidential"
+        - fieldId: "SalePrice"
+          value: 200000
+          fieldConditionId: "ForSale"
+        - fieldId: "SalePrice"
+          value: 500000
+          fieldConditionId: "ForSale"
+    isHomePage: false
+
+# Notes importantes
+notes:
+  - "Les IDs CityDistrict sont des entiers numériques spécifiques à Centris"
+  - "Les IDs GeographicArea sont des chaînes de caractères"
+  - "Toutes les localisations sont maintenant dans FieldsValues, pas dans Filters"
+  - "La structure suit exactement l'API Centris existante"
