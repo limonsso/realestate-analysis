@@ -1,0 +1,73 @@
+# Configuration UNIQUEMENT pour Trois-Rivières (AUCUN Chambly)
+# Cette configuration remplace complètement la configuration par défaut
+
+# Configuration Centris UNIQUEMENT Trois-Rivières
+centris:
+  # UNIQUEMENT Trois-Rivières - AUCUN Chambly !
+  locations_searched:
+    - type: "CityDistrict"
+      value: "Trois-Rivières"
+      type_id: 449
+
+  # Types de propriétés à rechercher
+  property_types:
+    - "Plex"
+
+  # Plage de prix pour Trois-Rivières
+  sale_price_min: 100000
+  sale_price_max: 1000000
+
+  # Force la mise à jour des propriétés existantes
+  force_update: false
+
+  # Configuration de recherche FORCÉE
+  search_config:
+    force_location: "Trois-Rivières"
+    exclude_locations: ["Chambly", "Montérégie", "Mauricie"]
+    strict_location_filter: true
+
+# Configuration de la base de données MongoDB
+database:
+  server_url: "localhost:27017"
+  connection_string: "mongodb://localhost:27017"
+  database_name: "real_estate_analytics"
+  username: null
+  password: null
+  auth_source: "admin"
+  auth_mechanism: "SCRAM-SHA-256"
+
+  # Collections pour Trois-Rivières uniquement
+  properties_collection: "trois_rivieres_plex_only"
+  summaries_collection: "trois_rivieres_summaries_only"
+  logs_collection: "trois_rivieres_logs_only"
+
+  # Options de connexion
+  max_pool_size: 10
+  min_pool_size: 0
+  max_idle_time_ms: 30000
+  server_selection_timeout_ms: 5000
+  connect_timeout_ms: 5000
+  socket_timeout_ms: 5000
+
+# Configuration des performances pour le test
+max_workers: 2
+batch_size: 5
+request_timeout: 60
+
+# Configuration du logging
+log_level: "DEBUG"
+log_file: "logs/trois_rivieres_only.log"
+max_retries: 3
+retry_delay: 2
+
+# Configuration spécifique au test UNIQUEMENT Trois-Rivières
+test_config:
+  max_test_properties: 10
+  max_test_pages: 3
+  test_timeout: 300
+  use_temporary_collections: false
+  cleanup_after_test: false
+  force_trois_rivieres: true
+  exclude_chambly: true
+  strict_location_validation: true
+  only_trois_rivieres: true

@@ -37,12 +37,13 @@ class CentrisExtractor:
         """
         self.config = config
         self.session_manager = CentrisSessionManager(config)
-        self.search_manager = CentrisSearchManager(self.session_manager)
+        self.search_manager = CentrisSearchManager(self.session_manager, config)
         self.summary_extractor = CentrisSummaryExtractor(self.session_manager)
-        self.detail_extractor = CentrisDetailExtractor()
+        self.detail_extractor = CentrisDetailExtractor(config=config)
         self.data_validator = CentrisDataValidator()
         
         logger.info("🔧 CentrisExtractor initialisé avec architecture modulaire")
+        logger.info(f"🔒 Configuration utilisée: {self.config}")
     
     async def extract_summaries(self, search_query: SearchQuery) -> List[PropertySummary]:
         """

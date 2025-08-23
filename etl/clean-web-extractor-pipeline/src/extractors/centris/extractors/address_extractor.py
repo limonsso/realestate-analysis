@@ -13,8 +13,9 @@ logger = structlog.get_logger()
 class AddressExtractor:
     """Extracteur spécialisé pour les adresses et coordonnées GPS"""
     
-    def __init__(self):
+    def __init__(self, config=None):
         self.logger = logger
+        self.config = config
     
     def extract_address(self, soup: BeautifulSoup) -> dict:
         """Extrait l'adresse complète d'une propriété"""
@@ -125,14 +126,34 @@ class AddressExtractor:
                         logger.debug(f"🏙️ Ville trouvée (sélecteur {selector}): {city}")
                         return city
             
-            # 3. Recherche dans le contenu de la page pour "Chambly"
+            # 3. Recherche dans le contenu de la page selon la configuration
             page_text = soup.get_text()
-            city_keywords = ['Chambly', 'Montréal', 'Québec', 'Laval', 'Longueuil']
             
-            for keyword in city_keywords:
-                if keyword in page_text:
-                    logger.debug(f"🏙️ Ville trouvée (recherche texte): {keyword}")
-                    return keyword
+            if self.config and hasattr(self.config, 'locations_searched'):
+                # Utiliser les localisations de la configuration
+                city_keywords = []
+                for location in self.config.locations_searched:
+                    if hasattr(location, 'value'):
+                        city_keywords.append(location.value)
+                    elif isinstance(location, dict) and 'value' in location:
+                        city_keywords.append(location['value'])
+                
+                if city_keywords:
+                    logger.debug(f"🏙️ Villes de la config: {city_keywords}")
+                    for keyword in city_keywords:
+                        if keyword in page_text:
+                            logger.debug(f"🏙️ Ville trouvée (config): {keyword}")
+                            return keyword
+            
+            # Fallback intelligent si pas de config
+            logger.debug("🏙️ Pas de config, recherche intelligente dans le texte")
+            # Chercher des mots qui ressemblent à des villes (commençant par majuscule, longueur > 3)
+            words = page_text.split()
+            for word in words:
+                word = word.strip('.,!?;:')
+                if len(word) > 3 and word[0].isupper() and word.isalpha():
+                    logger.debug(f"🏙️ Ville candidate trouvée: {word}")
+                    return word
             
             # 4. Recherche alternative dans l'URL ou le titre
             title_elem = soup.find('title')
@@ -232,14 +253,34 @@ class AddressExtractor:
                     logger.debug(f"🏛️ Région trouvée (titre): {region}")
                     return region
             
-            # 3. Recherche dans le contenu de la page pour des régions connues
+            # 3. Recherche dans le contenu de la page selon la configuration
             page_text = soup.get_text()
-            known_regions = ['Montérégie', 'Montreal', 'Laval', 'Longueuil', 'Québec']
             
-            for known_region in known_regions:
-                if known_region in page_text:
-                    logger.debug(f"🏛️ Région trouvée (recherche texte): {known_region}")
-                    return known_region
+            if self.config and hasattr(self.config, 'locations_searched'):
+                # Utiliser les régions de la configuration si disponibles
+                region_keywords = []
+                for location in self.config.locations_searched:
+                    if hasattr(location, 'region'):
+                        region_keywords.append(location.region)
+                    elif isinstance(location, dict) and 'region' in location:
+                        region_keywords.append(location['region'])
+                
+                if region_keywords:
+                    logger.debug(f"🏛️ Régions de la config: {region_keywords}")
+                    for keyword in region_keywords:
+                        if keyword in page_text:
+                            logger.debug(f"🏛️ Région trouvée (config): {keyword}")
+                            return keyword
+            
+            # Fallback intelligent si pas de config
+            logger.debug("🏛️ Pas de config, recherche intelligente dans le texte")
+            # Chercher des mots qui ressemblent à des régions
+            words = page_text.split()
+            for word in words:
+                word = word.strip('.,!?;:')
+                if len(word) > 3 and word[0].isupper() and word.isalpha():
+                    logger.debug(f"🏛️ Région candidate trouvée: {word}")
+                    return word
             
             # 4. Fallback par défaut
             logger.debug("🏛️ Région non trouvée, utilisation du défaut: Québec")

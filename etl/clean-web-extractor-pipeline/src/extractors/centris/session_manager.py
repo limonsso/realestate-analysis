@@ -4,7 +4,6 @@ Gestionnaire de session HTTP pour Centris.ca
 
 import aiohttp
 import structlog
-from config.settings import config
 
 logger = structlog.get_logger()
 
@@ -20,8 +19,11 @@ class CentrisSessionManager:
     
     def _setup_session(self):
         """Configure la session HTTP avec les headers appropriés"""
+        # Utiliser la configuration passée ou une valeur par défaut
+        timeout = getattr(self.config, 'request_timeout', 30)
+        
         self.session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=config.request_timeout),
+            timeout=aiohttp.ClientTimeout(total=timeout),
             headers={
                 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

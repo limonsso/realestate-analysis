@@ -16,9 +16,13 @@ logger = structlog.get_logger()
 class CentrisSearchManager:
     """Gestionnaire de recherche et pagination pour Centris"""
     
-    def __init__(self, session_manager: CentrisSessionManager):
+    def __init__(self, session_manager: CentrisSessionManager, config: Dict[str, Any] = None):
         self.session_manager = session_manager
+        self.config = config
         self.base_url = session_manager.base_url
+        
+        if self.config:
+            logger.debug(f"🔒 SearchManager initialisé avec configuration: {self.config}")
     
     async def initialize_search(self, search_query: SearchQuery) -> bool:
         """Initialise une nouvelle recherche sur Centris"""

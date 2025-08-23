@@ -25,15 +25,15 @@ logger = structlog.get_logger()
 class CentrisDetailExtractor:
     """Extracteur de détails de propriétés depuis les pages de détail"""
     
-    def __init__(self):
+    def __init__(self, config=None):
         self.validators = {
             'region': RegionValidator(),
             'property': PropertyValidator(),
             'data': DataValidator()
         }
         
-        # Initialisation des extracteurs spécialisés
-        self.address_extractor = AddressExtractor()
+        # Initialisation des extracteurs spécialisés avec la configuration
+        self.address_extractor = AddressExtractor(config=config)
         self.financial_extractor = FinancialExtractor()
         self.numeric_extractor = NumericExtractor()
     
