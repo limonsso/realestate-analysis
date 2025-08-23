@@ -32,7 +32,7 @@ class SaintHyacinthePlexExtractionTest:
     
     def __init__(self):
         """Initialise le test avec la configuration."""
-        self.config = load_config("config/config.yml")
+        self.config = load_config("config/config.saint_hyacinthe_test.yml")
         self.extractor = None
         self.db_service = None
         self._setup_complete = False  # Flag pour tracker l'état de setup
