@@ -122,6 +122,17 @@ etl/data-consolidation-pipeline/*_test.py
 etl/data-consolidation-pipeline/test_*.ipynb
 etl/data-consolidation-pipeline/debug_*.ipynb
 
+## 🧪 **Tests et fichiers temporaires du pipeline d'extraction web**
+etl/clean-web-extractor-pipeline/test_*.py
+etl/clean-web-extractor-pipeline/debug_*.py
+etl/clean-web-extractor-pipeline/temp_*.py
+etl/clean-web-extractor-pipeline/*_test.py
+etl/clean-web-extractor-pipeline/test_*.ipynb
+etl/clean-web-extractor-pipeline/debug_*.ipynb
+etl/clean-web-extractor-pipeline/check_*.py
+etl/clean-web-extractor-pipeline/examine_*.py
+etl/clean-web-extractor-pipeline/quick_*.py
+
 ## 📊 **Jupyter**
 .ipynb_checkpoints/
 *.ipynb_checkpoints/
