@@ -85,7 +85,9 @@ class CentrisDataValidator:
                 # Validation de la localisation
                 if prop.address and prop.address.city:
                     for expected_location in expected_locations:
-                        if expected_location.lower() in prop.address.city.lower():
+                        # expected_location est un LocationConfig, on utilise sa valeur
+                        expected_location_value = expected_location.value if hasattr(expected_location, 'value') else str(expected_location)
+                        if expected_location_value.lower() in prop.address.city.lower():
                             is_match = True
                             break
                 

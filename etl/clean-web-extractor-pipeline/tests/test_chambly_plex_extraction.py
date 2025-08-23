@@ -35,19 +35,31 @@ class ChamblyPlexExtractionTest:
         self.config = load_config("config/config.yml")
         self.extractor = None
         self.db_service = None
+        self._setup_complete = False  # Flag pour tracker l'état de setup
         
     async def setup(self):
         """Configure l'extracteur et la base de données."""
         logger.info("🔧 Configuration du test d'extraction Chambly")
         
-        # Initialiser l'extracteur Centris
-        self.extractor = CentrisExtractor(self.config.centris)
-        
-        # Initialiser le service de base de données
-        self.db_service = DatabaseService(self.config.database)
-        await self.db_service.connect()
-        
-        logger.info("✅ Configuration terminée")
+        try:
+            # Initialiser l'extracteur Centris
+            self.extractor = CentrisExtractor(self.config.centris)
+            logger.debug("✅ CentrisExtractor initialisé")
+            
+            # Initialiser le service de base de données
+            self.db_service = DatabaseService(self.config.database)
+            await self.db_service.connect()
+            logger.debug("✅ DatabaseService initialisé et connecté")
+            
+            self._setup_complete = True
+            logger.info("✅ Configuration terminée")
+            
+        except Exception as e:
+            logger.error(f"❌ Erreur lors de la configuration: {e}")
+            self._setup_complete = False
+            # Nettoyer en cas d'erreur
+            await self.cleanup()
+            raise
     
     async def create_search_query(self) -> SearchQuery:
         """Crée une requête de recherche pour Chambly."""
@@ -194,10 +206,16 @@ class ChamblyPlexExtractionTest:
             
             for i, prop in enumerate(sample_properties):
                 logger.info(f"🏠 Exemple {i+1}:")
-                logger.info(f"   📍 Adresse: {prop.address.street}, {prop.address.city}")
-                logger.info(f"   💰 Prix: {prop.financial.price:,}$" if prop.financial else "   💰 Prix: Non spécifié")
-                logger.info(f"   🏠 Type: {prop.type}")
-                logger.info(f"   🆔 ID: {prop.id}")
+                logger.info(f"   📍 Adresse: {prop.address.street if prop.address and prop.address.street else 'N/A'}, {prop.address.city if prop.address and prop.address.city else 'N/A'}")
+                
+                # Formatage sécurisé du prix
+                if prop.financial and prop.financial.price is not None:
+                    logger.info(f"   💰 Prix: {prop.financial.price:,}$")
+                else:
+                    logger.info("   💰 Prix: Non spécifié")
+                
+                logger.info(f"   🏠 Type: {prop.type if prop.type else 'N/A'}")
+                logger.info(f"   🆔 ID: {prop.id if prop.id else 'N/A'}")
             
             # Validation des données
             validation_results = await self._validate_data_quality(sample_properties)
@@ -220,7 +238,7 @@ class ChamblyPlexExtractionTest:
         
         validation = {
             "adresses_complètes": all(p.address and p.address.street and p.address.city for p in properties),
-            "prix_valides": all(p.financial and p.financial.price > 0 for p in properties if p.financial),
+            "prix_valides": all(p.financial and p.financial.price is not None and p.financial.price > 0 for p in properties if p.financial),
             "types_corrects": all(TypeCategoryValidator.validate_type_category_consistency(p) for p in properties),
             "ids_uniques": len(set(p.id for p in properties)) == len(properties),
             "localisation_chambly": all("chambly" in p.address.city.lower() for p in properties if p.address and p.address.city)
@@ -233,20 +251,28 @@ class ChamblyPlexExtractionTest:
         """Nettoie les ressources."""
         logger.info("🧹 Nettoyage des ressources")
         
-        try:
-            if hasattr(self, 'extractor') and self.extractor:
+        # Nettoyer l'extracteur seulement si le setup était complet
+        if self._setup_complete and hasattr(self, 'extractor') and self.extractor is not None:
+            try:
                 await self.extractor.close()
                 logger.debug("✅ CentrisExtractor fermé")
-        except Exception as e:
-            logger.warning(f"⚠️ Erreur lors de la fermeture de l'extracteur: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur lors de la fermeture de l'extracteur: {e}")
+        else:
+            logger.debug("ℹ️ CentrisExtractor non initialisé ou setup incomplet")
         
-        try:
-            if hasattr(self, 'db_service') and self.db_service:
+        # Nettoyer la base de données seulement si le setup était complet
+        if self._setup_complete and hasattr(self, 'db_service') and self.db_service is not None:
+            try:
                 await self.db_service.close()
                 logger.debug("✅ DatabaseService fermé")
-        except Exception as e:
-            logger.warning(f"⚠️ Erreur lors de la fermeture de la base de données: {e}")
+            except Exception as e:
+                logger.warning(f"⚠️ Erreur lors de la fermeture de la base de données: {e}")
+        else:
+            logger.debug("ℹ️ DatabaseService non initialisé ou setup incomplet")
         
+        # Réinitialiser le flag
+        self._setup_complete = False
         logger.info("✅ Nettoyage terminé")
     
     async def run_test(self):

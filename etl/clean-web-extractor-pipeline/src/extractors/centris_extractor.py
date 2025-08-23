@@ -10,7 +10,7 @@ from src.models.property import SearchQuery, PropertySummary, Property
 from .centris.session_manager import CentrisSessionManager
 from .centris.search_manager import CentrisSearchManager
 from .centris.summary_extractor import CentrisSummaryExtractor
-from .centris.detail_extractor import CentrisDetailExtractor
+from .centris.detail_extractor_refactored import CentrisDetailExtractor
 from .centris.data_validator import CentrisDataValidator
 
 logger = structlog.get_logger()

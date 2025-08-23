@@ -81,9 +81,6 @@ class PropertyFeatures(BaseModel):
     bedrooms: Optional[int] = Field(None, ge=0, description="Nombre de chambres")
     bedrooms_basement: Optional[int] = Field(None, ge=0, description="Chambres au sous-sol")
     bathrooms: Optional[int] = Field(None, ge=0, description="Nombre de salles de bain")
-    water_rooms: Optional[int] = Field(None, ge=0, description="Salles d'eau")
-    garages: Optional[int] = Field(None, ge=0, description="Nombre de garages")
-    driveways: Optional[int] = Field(None, ge=0, description="Nombre d'allées")
     
     @computed_field
     @property
@@ -175,6 +172,44 @@ class Property(BaseModel):
     # Médias et descriptions
     media: PropertyMedia = Field(..., description="Médias de la propriété")
     description: PropertyDescription = Field(..., description="Descriptions de la propriété")
+    
+    # Informations détaillées supplémentaires
+    property_usage: Optional[str] = Field(None, description="Utilisation de la propriété (ex: Résidentielle)")
+    building_style: Optional[str] = Field(None, description="Style de bâtiment (ex: Jumelé)")
+    parking_info: Optional[str] = Field(None, description="Informations de stationnement (ex: Garage (1))")
+    # units_info supprimé car redondant avec residential_units_detail et units_count
+    # main_unit_info supprimé car redondant avec main_unit_detail
+    move_in_date: Optional[str] = Field(None, description="Date d'emménagement (ex: Selon les baux)")
+    
+    # Nouvelles informations numériques extraites
+    construction_year: Optional[int] = Field(None, ge=1600, le=2100, description="Année de construction")
+    terrain_area_sqft: Optional[int] = Field(None, ge=0, description="Superficie du terrain en pieds carrés")
+    parking_count: Optional[int] = Field(None, ge=0, description="Nombre total de stationnements")
+    units_count: Optional[int] = Field(None, ge=0, description="Nombre total d'unités")
+    walk_score: Optional[int] = Field(None, ge=0, le=100, description="Walk Score (0-100)")
+    
+    # Informations détaillées des unités
+    residential_units_detail: Optional[str] = Field(None, description="Détail des unités résidentielles (ex: 1 x 4 ½, 2 x 5 ½)")
+    main_unit_detail: Optional[str] = Field(None, description="Détail de l'unité principale (ex: 5 pièces, 3 chambres, 1 salle de bain)")
+    
+    # Nouvelles informations numériques détaillées des unités
+    # Champs dynamiques pour les unités (ex: units_2_half_count, units_3_half_count, etc.)
+    units_2_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 2 ½")
+    units_3_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 3 ½")
+    units_4_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 4 ½")
+    units_5_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 5 ½")
+    units_6_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 6 ½")
+    units_7_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 7 ½")
+    units_8_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 8 ½")
+    units_9_half_count: Optional[int] = Field(None, ge=0, description="Nombre d'unités 9 ½")
+    
+    # Informations de l'unité principale
+    main_unit_rooms: Optional[int] = Field(None, ge=0, description="Nombre de pièces de l'unité principale")
+    main_unit_bedrooms: Optional[int] = Field(None, ge=0, description="Nombre de chambres de l'unité principale")
+    main_unit_bathrooms: Optional[int] = Field(None, ge=0, description="Nombre de salles de bain de l'unité principale")
+    
+    # Champs dynamiques supplémentaires
+    # units_breakdown supprimé car redondant avec units_X_half_count
     
     # Métadonnées
     metadata: PropertyMetadata = Field(..., description="Métadonnées de la propriété")

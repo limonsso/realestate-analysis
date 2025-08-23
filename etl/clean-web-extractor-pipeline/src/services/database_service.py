@@ -90,7 +90,7 @@ class DatabaseService:
             self.logger.error(f"❌ Erreur lors de la connexion MongoDB: {str(e)}")
             raise
     
-    def close(self):
+    async def close(self):
         """Ferme la connexion à la base de données"""
         if self.client:
             self.client.close()
@@ -260,10 +260,10 @@ class DatabaseService:
             logger.error(f"❌ Erreur lors de la sauvegarde du résumé {summary.id}: {str(e)}")
             return False
     
-    def get_property_by_id(self, property_id: str) -> Optional[Property]:
+    async def get_property_by_id(self, property_id: str) -> Optional[Property]:
         """Récupère une propriété par son ID"""
         try:
-            property_dict = self.properties_collection.find_one({"id": property_id})
+            property_dict = await self.properties_collection.find_one({"id": property_id})
             if property_dict:
                 return Property(**property_dict)
             return None

@@ -1,201 +1,195 @@
-# 🏗️ Architecture Modulaire du Pipeline
+# 🏗️ Architecture du Pipeline d'Extraction
 
-## 📋 Vue d'Ensemble
+> **Architecture modulaire et maintenable pour l'extraction de données immobilières**
 
-Le pipeline utilise une architecture modulaire moderne basée sur des composants spécialisés, chacun ayant une responsabilité unique et bien définie. Cette approche facilite la maintenance, les tests et l'évolution du code.
+## 🎯 **Vue d'Ensemble de l'Architecture**
 
-## 🎯 **Améliorations Récentes**
+Le pipeline suit une architecture **modulaire et asynchrone** conçue pour la **maintenabilité** et la **scalabilité**. Chaque composant a une responsabilité unique et peut être testé et modifié indépendamment.
 
-- ✅ **Structure nettoyée** : Suppression des fichiers redondants et temporaires
-- ✅ **Architecture modulaire** : Composants spécialisés et réutilisables
-- ✅ **Validation centralisée** : `TypeCategoryValidator` pour la cohérence type/catégorie
-- ✅ **Test intégré** : Validation Chambly Plex fonctionnelle à 100%
-- ✅ **Code organisé** : Structure claire et maintenable
+## 🏗️ **Structure Modulaire**
 
-## 🎯 Principes de Conception
-
-### **1. Responsabilité Unique (Single Responsibility)**
-
-Chaque composant a une seule responsabilité clairement définie.
-
-### **2. Séparation des Préoccupations (Separation of Concerns)**
-
-Les différentes préoccupations (HTTP, parsing, validation, etc.) sont séparées dans des composants distincts.
-
-### **3. Inversion de Dépendance (Dependency Inversion)**
-
-Les composants dépendent d'abstractions, pas de détails d'implémentation.
-
-### **4. Composition sur l'Héritage (Composition over Inheritance)**
-
-L'architecture privilégie la composition de composants spécialisés.
-
-## 🏗️ Structure Modulaire
+### **Organisation des Composants**
 
 ```
-📦 CentrisExtractor (Orchestrateur Principal)
-├── 🔌 CentrisSessionManager     # Gestion des sessions HTTP
-├── 🔍 CentrisSearchManager      # Recherche et pagination
-├── 📋 CentrisSummaryExtractor   # Extraction des résumés
-├── 🔎 CentrisDetailExtractor    # Extraction des détails
-├── ✅ CentrisDataValidator      # Validation des données
-└── 🚀 CentrisExtractor         # Orchestrateur principal
+src/
+├── 🎭 core/                    # Pipeline principal
+│   └── pipeline.py            # Orchestrateur principal
+├── 🔍 extractors/             # Extracteurs spécialisés
+│   ├── centris_extractor.py   # Interface principale Centris
+│   └── centris/               # Implémentation Centris modulaire
+│       ├── session_manager.py      # Gestion des sessions HTTP
+│       ├── search_manager.py       # Recherche et pagination
+│       ├── summary_extractor.py    # Extraction des résumés
+│       ├── detail_extractor.py     # Extraction des détails
+│       └── data_validator.py       # Validation des données
+├── 📊 models/                 # Modèles de données Pydantic
+├── 🗄️ services/              # Services (base de données)
+└── 🛠️ utils/                 # Utilitaires et validation
 ```
 
-## 🔌 CentrisSessionManager
+### **Séparation des Responsabilités**
 
-### **Responsabilité**
+| Composant            | Responsabilité                            | Dépendances                       |
+| -------------------- | ----------------------------------------- | --------------------------------- |
+| **SessionManager**   | Gestion des sessions HTTP, cookies, retry | `aiohttp`, `structlog`            |
+| **SearchManager**    | Construction des requêtes, pagination     | `SessionManager`                  |
+| **SummaryExtractor** | Extraction des résumés de propriétés      | `BeautifulSoup`, `SessionManager` |
+| **DetailExtractor**  | Extraction des détails complets           | `BeautifulSoup`, `SessionManager` |
+| **DataValidator**    | Validation et nettoyage des données       | `Pydantic`, `validators`          |
+| **CentrisExtractor** | Orchestration et coordination             | Tous les composants               |
 
-Gestion des sessions HTTP avec gestion des erreurs, retry automatique et configuration des timeouts.
+## 🔄 **Flux de Données**
 
-### **Fonctionnalités**
+### **Workflow d'Extraction**
 
-- Configuration des sessions HTTP
-- Gestion des headers et User-Agents
-- Retry automatique avec backoff
-- Gestion des timeouts
-- Rotation des sessions
+```mermaid
+graph TD
+    A[Configuration] --> B[Initialisation]
+    B --> C[Recherche des Résumés]
+    C --> D[Extraction des Résumés]
+    D --> E[Validation des Résumés]
+    E --> F[Extraction des Détails]
+    F --> G[Validation des Détails]
+    G --> H[Sauvegarde en Base]
+    H --> I[Logging et Monitoring]
+```
 
-### **Interface**
+### **Séquence d'Exécution**
+
+1. **🔧 Initialisation**
+
+   - Chargement de la configuration
+   - Création des composants
+   - Connexion à la base de données
+
+2. **🔍 Recherche**
+
+   - Construction de la requête de recherche
+   - Appel à l'API Centris
+   - Gestion de la pagination
+
+3. **📊 Extraction des Résumés**
+
+   - Parsing du HTML des pages de résultats
+   - Extraction des informations de base
+   - Validation et nettoyage
+
+4. **🏠 Extraction des Détails**
+
+   - Récupération des pages individuelles
+   - Extraction des informations détaillées
+   - Validation complète des données
+
+5. **💾 Sauvegarde**
+   - Validation finale des modèles
+   - Sauvegarde en MongoDB
+   - Logging des résultats
+
+## 🧩 **Composants Détaillés**
+
+### **1. SessionManager (`session_manager.py`)**
+
+**Responsabilité** : Gestion des sessions HTTP avec gestion des erreurs et retry.
 
 ```python
 class CentrisSessionManager:
-    async def get_session(self) -> aiohttp.ClientSession
+    async def get(self, url: str) -> Response
+    async def post(self, url: str, data: dict) -> Response
     async def close(self)
-    async def _setup_session(self) -> aiohttp.ClientSession
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Réutilisabilité** : Session partagée entre composants
-- **Gestion d'erreurs** : Retry automatique centralisé
-- **Performance** : Réutilisation des connexions HTTP
+- ✅ Gestion automatique des cookies
+- ✅ Retry avec backoff exponentiel
+- ✅ Gestion des timeouts
+- ✅ Rotation des User-Agents
+- ✅ Gestion des erreurs réseau
 
-## 🔍 CentrisSearchManager
+### **2. SearchManager (`search_manager.py`)**
 
-### **Responsabilité**
-
-Construction des requêtes de recherche, gestion de la pagination et communication avec l'API Centris.
-
-### **Fonctionnalités**
-
-- Construction des requêtes de recherche
-- Gestion de la pagination
-- Appel à l'API Centris
-- Gestion des réponses et erreurs
-
-### **Interface**
+**Responsabilité** : Construction des requêtes de recherche et gestion de la pagination.
 
 ```python
 class CentrisSearchManager:
-    async def initialize_search(self, search_query: SearchQuery) -> bool
-    async def search_with_pagination(self, search_query: SearchQuery, max_pages: int) -> List[str]
-    def _build_search_request(self, search_query: SearchQuery) -> dict
+    async def search_properties(self, query: SearchQuery) -> List[PropertySummary]
+    async def _get_search_page(self, page: int) -> BeautifulSoup
+    async def _extract_summaries_from_page(self, soup: BeautifulSoup) -> List[PropertySummary]
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Flexibilité** : Support de différents types de recherche
-- **Robustesse** : Gestion de la pagination et des erreurs
-- **Maintenabilité** : Logique de recherche centralisée
+- ✅ Construction des requêtes Centris
+- ✅ Gestion automatique de la pagination
+- ✅ Extraction des résumés de propriétés
+- ✅ Gestion des erreurs de pagination
 
-## 📋 CentrisSummaryExtractor
+### **3. SummaryExtractor (`summary_extractor.py`)**
 
-### **Responsabilité**
-
-Extraction des résumés de propriétés depuis les pages HTML de résultats de recherche.
-
-### **Fonctionnalités**
-
-- Parsing HTML des pages de résultats
-- Extraction des informations de base (ID, prix, adresse, type)
-- Validation des données extraites
-- Gestion des erreurs de parsing
-
-### **Interface**
+**Responsabilité** : Extraction des informations de base depuis les pages de résultats.
 
 ```python
 class CentrisSummaryExtractor:
-    def extract_summaries_from_html(self, html_content: str) -> List[PropertySummary]
-    def _parse_summaries_from_soup(self, soup: BeautifulSoup) -> List[PropertySummary]
-    def _extract_single_summary(self, container: BeautifulSoup) -> Optional[PropertySummary]
+    def extract_summaries_from_html(self, html: str) -> List[PropertySummary]
+    def _extract_property_summary(self, property_elem: Tag) -> PropertySummary
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Spécialisation** : Focus uniquement sur l'extraction des résumés
-- **Testabilité** : Tests unitaires indépendants
-- **Évolutivité** : Facile d'ajouter de nouveaux sélecteurs
+- ✅ Parsing HTML avec BeautifulSoup
+- ✅ Extraction des informations de base
+- ✅ Validation des données extraites
+- ✅ Gestion des données manquantes
 
-## 🔎 CentrisDetailExtractor
+### **4. DetailExtractor (`detail_extractor.py`)**
 
-### **Responsabilité**
-
-Extraction des détails complets des propriétés depuis les pages individuelles.
-
-### **Fonctionnalités**
-
-- Extraction des détails complets
-- Parsing des informations détaillées
-- Gestion des images et médias
-- Validation des données détaillées
-
-### **Interface**
+**Responsabilité** : Extraction des informations détaillées depuis les pages individuelles.
 
 ```python
 class CentrisDetailExtractor:
-    async def extract_details(self, property_id: str) -> Optional[Property]
-    def _parse_property_details(self, html_content: str) -> Optional[Property]
+    def extract_property_details(self, soup: BeautifulSoup, url: str) -> Property
+    def _extract_address(self, soup: BeautifulSoup) -> Address
+    def _extract_financial(self, soup: BeautifulSoup) -> FinancialInfo
+    # ... autres méthodes d'extraction
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Séparation** : Extraction des résumés et détails séparée
-- **Performance** : Extraction des détails à la demande
-- **Flexibilité** : Support de différents formats de pages
+- ✅ Extraction des adresses et coordonnées GPS
+- ✅ Extraction des informations financières
+- ✅ Extraction des caractéristiques techniques
+- ✅ Extraction des médias (images, visites virtuelles)
+- ✅ **Nouvelles informations détaillées** : Utilisation, style bâtiment, stationnement, unités, Walk Score
 
-## ✅ CentrisDataValidator
+### **5. DataValidator (`data_validator.py`)**
 
-### **Responsabilité**
-
-Validation et nettoyage des données extraites selon des règles métier définies.
-
-### **Fonctionnalités**
-
-- Validation des localisations
-- Validation des types de propriétés
-- Validation des prix et coordonnées
-- Nettoyage des données
-
-### **Interface**
+**Responsabilité** : Validation et nettoyage des données extraites.
 
 ```python
 class CentrisDataValidator:
-    def validate_search_results(self, summaries: List[PropertySummary], search_query: SearchQuery) -> bool
-    def validate_property_data(self, property_data: Property) -> bool
-    def _validate_locations(self, summaries: List[PropertySummary], search_query: SearchQuery) -> bool
+    def validate_search_results(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_locations_searched(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_property_types(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_regions(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_postal_codes(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_prices(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_gps_coordinates(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _validate_property_ids(self, summaries: List[PropertySummary]) -> List[PropertySummary]
+    def _clean_text(self, text: str) -> str
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Qualité** : Assurance de la qualité des données
-- **Cohérence** : Validation centralisée des règles métier
-- **Maintenabilité** : Règles de validation centralisées
+- ✅ Validation des emplacements recherchés
+- ✅ Validation des types de propriétés
+- ✅ Validation des régions et codes postaux
+- ✅ Validation des prix et coordonnées GPS
+- ✅ Nettoyage et normalisation des textes
+- ✅ **Nouvelle validation** : Cohérence type/catégorie
 
-## 🚀 CentrisExtractor (Orchestrateur)
+### **6. CentrisExtractor (`centris_extractor.py`)**
 
-### **Responsabilité**
-
-Coordination de tous les composants et orchestration du processus d'extraction complet.
-
-### **Fonctionnalités**
-
-- Initialisation des composants
-- Orchestration du workflow d'extraction
-- Gestion des erreurs globales
-- Logging et monitoring
-
-### **Interface**
+**Responsabilité** : Orchestration et coordination de tous les composants.
 
 ```python
 class CentrisExtractor:
@@ -204,181 +198,105 @@ class CentrisExtractor:
     async def close(self)
 ```
 
-### **Avantages**
+**Fonctionnalités** :
 
-- **Coordination** : Orchestration centralisée du processus
-- **Simplicité** : Interface simple pour les utilisateurs
-- **Gestion d'erreurs** : Gestion globale des erreurs
+- ✅ Coordination des composants
+- ✅ Gestion du cycle de vie des composants
+- ✅ Interface unifiée pour l'extraction
+- ✅ Gestion des erreurs globales
 
-## 🔄 Flux de Données
+## 🔧 **Gestion des Erreurs et Résilience**
 
-### **1. Initialisation**
+### **Stratégies de Récupération**
 
-```
-CentrisExtractor → CentrisSessionManager → Configuration des sessions
-```
+1. **Retry Automatique** : Tentatives multiples avec délai progressif
+2. **Fallback** : Sélecteurs HTML alternatifs en cas d'échec
+3. **Graceful Degradation** : Continuation avec données partielles
+4. **Logging Détaillé** : Traçabilité complète des erreurs
 
-### **2. Recherche**
+### **Types d'Erreurs Gérées**
 
-```
-SearchQuery → CentrisSearchManager → API Centris → Pages HTML
-```
+- ✅ **Erreurs réseau** : Timeouts, connexions refusées
+- ✅ **Erreurs HTML** : Structure modifiée, sélecteurs cassés
+- ✅ **Erreurs de validation** : Données manquantes ou invalides
+- ✅ **Erreurs de base de données** : Connexions, permissions
 
-### **3. Extraction des Résumés**
+## 📊 **Performance et Scalabilité**
 
-```
-Pages HTML → CentrisSummaryExtractor → List[PropertySummary]
-```
+### **Optimisations Implémentées**
 
-### **4. Validation**
+- **Concurrence asynchrone** : Gestion de multiples requêtes simultanées
+- **Pool de workers** : Limitation du nombre de connexions concurrentes
+- **Cache des sessions** : Réutilisation des connexions HTTP
+- **Validation en streaming** : Traitement des données au fur et à mesure
 
-```
-List[PropertySummary] → CentrisDataValidator → Résultats validés
-```
+### **Métriques de Performance**
 
-### **5. Extraction des Détails (Optionnel)**
+- **Débit** : 8-20 propriétés par page de résultats
+- **Latence** : 1-2 secondes par page
+- **Concurrence** : Jusqu'à 4 workers simultanés
+- **Mémoire** : Gestion optimisée des objets HTML
 
-```
-PropertySummary → CentrisDetailExtractor → Property complète
-```
+## 🧪 **Testabilité**
 
-## 🧪 Testabilité
+### **Architecture Orientée Tests**
 
-### **Tests Unitaires**
+- **Injection de dépendances** : Composants facilement mockables
+- **Interfaces claires** : Contrats bien définis entre composants
+- **Séparation des responsabilités** : Tests unitaires ciblés
+- **Configuration externalisée** : Tests avec différents paramètres
 
-Chaque composant peut être testé indépendamment avec des mocks des autres composants.
+### **Types de Tests Supportés**
 
-### **Tests d'Intégration**
+- **Tests unitaires** : Validation des composants individuels
+- **Tests d'intégration** : Validation des interactions entre composants
+- **Tests d'extraction réelle** : Validation sur Centris en production
+- **Tests de performance** : Validation des métriques de performance
 
-Les composants peuvent être testés ensemble pour valider leur interaction.
+## 🔄 **Évolutivité et Maintenance**
 
-### **Tests de Performance**
+### **Ajout de Nouveaux Champs**
 
-Chaque composant peut être testé individuellement pour identifier les goulots d'étranglement.
+1. **Extension du modèle** : Ajout des champs dans `Property`
+2. **Implémentation de l'extraction** : Nouvelle méthode dans `DetailExtractor`
+3. **Validation** : Règles dans `DataValidator`
+4. **Tests** : Validation de l'extraction et de la sauvegarde
 
-## 🔧 Extensibilité
+### **Support de Nouveaux Sites**
 
-### **Ajout de Nouveaux Extracteurs**
+1. **Nouvel extracteur** : Implémentation de l'interface d'extraction
+2. **Adaptation des modèles** : Modèles spécifiques au site
+3. **Configuration** : Paramètres d'extraction spécifiques
+4. **Tests** : Validation de l'extraction et de la sauvegarde
 
-```python
-class NewExtractor:
-    async def extract_data(self, content: str) -> List[Data]:
-        # Implémentation spécifique
-        pass
+## 📚 **Documentation et Standards**
 
-# Intégration dans CentrisExtractor
-self.new_extractor = NewExtractor()
-```
+### **Standards de Code**
 
-### **Ajout de Nouvelles Validations**
+- **Type hints** : Annotations Python complètes
+- **Docstrings** : Documentation claire de chaque fonction
+- **PEP 8** : Style de code Python standard
+- **Logging structuré** : Traçabilité avec structlog
 
-```python
-class CentrisDataValidator:
-    def _validate_new_field(self, data: Any) -> bool:
-        # Nouvelle règle de validation
-        pass
-```
+### **Documentation**
 
-### **Ajout de Nouveaux Types de Recherche**
-
-```python
-class CentrisSearchManager:
-    def _build_new_search_request(self, query: NewQuery) -> dict:
-        # Nouveau type de requête
-        pass
-```
-
-## 📊 Métriques et Monitoring
-
-### **Métriques par Composant**
-
-- **CentrisSessionManager** : Nombre de sessions, taux de succès
-- **CentrisSearchManager** : Temps de réponse, nombre de pages
-- **CentrisSummaryExtractor** : Taux d'extraction, temps de parsing
-- **CentrisDataValidator** : Taux de validation, types d'erreurs
-
-### **Logging Structuré**
-
-```json
-{
-  "component": "CentrisSummaryExtractor",
-  "operation": "extract_summaries",
-  "input_size": "27991",
-  "output_count": 8,
-  "duration_ms": 1250,
-  "success": true
-}
-```
-
-## 🚨 Gestion des Erreurs
-
-### **Stratégies par Composant**
-
-- **CentrisSessionManager** : Retry automatique, rotation des sessions
-- **CentrisSearchManager** : Fallback sur des requêtes alternatives
-- **CentrisSummaryExtractor** : Sélecteurs alternatifs, validation des données
-- **CentrisDataValidator** : Règles de validation flexibles, logging détaillé
-
-### **Propagation des Erreurs**
-
-Les erreurs sont propagées de manière appropriée à travers les composants, permettant une gestion centralisée dans l'orchestrateur.
-
-## 🎯 Avantages de l'Architecture
-
-### **1. Maintenabilité**
-
-- Code organisé et facile à comprendre
-- Modifications localisées dans des composants spécifiques
-- Documentation claire de chaque composant
-
-### **2. Testabilité**
-
-- Tests unitaires indépendants
-- Mocks faciles à créer
-- Couverture de code élevée
-
-### **3. Extensibilité**
-
-- Ajout facile de nouvelles fonctionnalités
-- Réutilisation des composants existants
-- Architecture évolutive
-
-### **4. Performance**
-
-- Optimisation possible par composant
-- Parallélisation des opérations
-- Gestion efficace des ressources
-
-### **5. Robustesse**
-
-- Gestion d'erreurs localisée
-- Fallback et retry automatique
-- Validation des données à chaque étape
-
-## 🔮 Évolutions Futures
-
-### **1. Support Multi-Sources**
-
-- Ajout d'extracteurs pour d'autres sites
-- Interface commune pour tous les extracteurs
-- Comparaison des données entre sources
-
-### **2. Pipeline de Données**
-
-- Intégration avec Apache Kafka
-- Traitement en temps réel
-- Stockage distribué
-
-### **3. Interface Web**
-
-- Dashboard de monitoring
-- Configuration via interface graphique
-- Visualisation des données extraites
+- **README** : Vue d'ensemble et utilisation
+- **Architecture** : Détails techniques et composants
+- **Configuration** : Paramètres et options
+- **Tests** : Guide d'exécution et validation
+- **Exemples** : Cas d'usage concrets
 
 ---
 
-## 🎉 Conclusion
+## 🎉 **Résumé de l'Architecture**
 
-L'architecture modulaire du pipeline offre une base solide pour l'extraction de données immobilières. Elle combine flexibilité, maintenabilité et performance, tout en facilitant l'évolution future du système.
+Cette architecture modulaire offre :
 
-**🚀 Architecture prête pour la production et l'évolution !**
+- ✅ **Maintenabilité** : Composants séparés et testables
+- ✅ **Évolutivité** : Ajout facile de nouveaux champs et sites
+- ✅ **Robustesse** : Gestion complète des erreurs et retry
+- ✅ **Performance** : Optimisations asynchrones et concourantes
+- ✅ **Testabilité** : Architecture orientée tests
+- ✅ **Documentation** : Guide complet et exemples
+
+**🚀 Architecture prête pour la production et l'évolution future !**

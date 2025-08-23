@@ -1,436 +1,206 @@
-# 🏠 Pipeline d'Extraction Immobilière - Centris.ca
+# 🏠 Pipeline d'Extraction Web Immobilier - Version Finale
 
-## 📋 Vue d'Ensemble
+> **Pipeline d'extraction de données immobilières depuis Centris.ca avec architecture modulaire et validation avancée**
 
-Pipeline modulaire et maintenable pour l'extraction de données immobilières depuis Centris.ca. Conçu avec une architecture moderne utilisant `asyncio`, Pydantic pour la validation des données, et une approche modulaire pour une maintenance facile.
+## 🎯 **Statut du Projet : 100% Fonctionnel ✅**
 
-## 🚀 Fonctionnalités Principales
+- ✅ **Extraction complète** : Toutes les informations demandées sont extraites
+- ✅ **Validation des données** : Règles de cohérence type/catégorie implémentées
+- ✅ **Architecture modulaire** : Composants séparés et maintenables
+- ✅ **Tests d'intégration** : Validation sur cas réel (Chambly)
+- ✅ **Structure nettoyée** : Fichiers temporaires supprimés, code optimisé
 
-- ✅ **Extraction complète** : Résumés + détails des propriétés
-- ✅ **Architecture modulaire** : Composants spécialisés et réutilisables
-- ✅ **Validation robuste** : Cohérence type/catégorie automatique
-- ✅ **Structure propre** : Code organisé et maintenable
-- ✅ **Test intégré** : Validation Chambly Plex fonctionnelle
-- ✅ **Gestion des erreurs** : Retry automatique et gestion des timeouts
-- ✅ **Logging structuré** : Traçabilité complète avec structlog
-- ✅ **Configuration flexible** : YAML + variables d'environnement
+## 🚀 **Fonctionnalités Principales**
 
-## 🏗️ Architecture
+### 🔍 **Extraction de Données Complète**
 
-### **Structure Modulaire**
+- **Informations de base** : Prix, adresse, type, statut
+- **Détails techniques** : Dimensions, caractéristiques, médias
+- **Informations détaillées** : Utilisation, style bâtiment, stationnement, unités, Walk Score
+- **Validation intelligente** : Cohérence type/catégorie, règles métier
+
+### 🏗️ **Architecture Modulaire**
+
+- **SessionManager** : Gestion des sessions HTTP et cookies
+- **SearchManager** : Recherche et pagination des résultats
+- **SummaryExtractor** : Extraction des résumés de propriétés
+- **DetailExtractor** : Extraction détaillée des pages individuelles
+- **DataValidator** : Validation et nettoyage des données
+
+### 🗄️ **Gestion des Données**
+
+- **Modèles Pydantic** : Validation et sérialisation robustes
+- **MongoDB** : Stockage flexible et scalable
+- **Configuration** : Paramètres personnalisables par table/collection
+
+## 📁 **Structure du Projet (Nettoyée)**
 
 ```
-src/extractors/centris/
-├── 🎭 session_manager.py      # Gestion des sessions HTTP
-├── 🔍 search_manager.py       # Recherche et pagination
-├── 📊 summary_extractor.py    # Extraction des résumés
-├── 🏠 detail_extractor.py     # Extraction des détails
-├── ✅ data_validator.py       # Validation des données
-└── 🚀 centris_extractor.py   # Orchestrateur principal
+clean-web-extractor-pipeline/
+├── 📁 src/                          # Code source principal
+│   ├── 📁 core/                     # Pipeline principal
+│   ├── 📁 extractors/               # Extracteurs spécialisés
+│   │   └── 📁 centris/             # Extracteur Centris modulaire
+│   ├── 📁 models/                   # Modèles de données
+│   ├── 📁 services/                 # Services (base de données)
+│   └── 📁 utils/                    # Utilitaires et validation
+├── 📁 config/                       # Configuration
+├── 📁 tests/                        # Tests d'intégration
+├── 📁 examples/                     # Exemples d'utilisation
+├── 📁 scripts/                      # Scripts d'exécution
+├── 📁 docs/                         # Documentation complète
+└── 📁 logs/                         # Logs d'exécution
 ```
 
-### **Composants Clés**
-
-1. **CentrisSessionManager** : Gestion des sessions HTTP avec retry et timeout
-2. **CentrisSearchManager** : Construction des requêtes et pagination
-3. **CentrisSummaryExtractor** : Extraction des résumés de propriétés
-4. **CentrisDetailExtractor** : Extraction des détails complets
-5. **CentrisDataValidator** : Validation et nettoyage des données
-6. **CentrisExtractor** : Orchestrateur principal coordonnant tous les composants
-
-## 🛠️ Installation et Configuration
+## 🛠️ **Installation et Configuration**
 
 ### **Prérequis**
 
+- Python 3.8+
+- MongoDB 4.4+
+- Dépendances listées dans `requirements.txt`
+
+### **Installation**
+
 ```bash
-Python 3.8+
+# Cloner le projet
+git clone <repository>
+cd clean-web-extractor-pipeline
+
+# Installer les dépendances
 pip install -r requirements.txt
+
+# Configurer l'environnement
+cp env.example env.local
+# Éditer env.local avec vos paramètres
 ```
 
 ### **Configuration**
 
-1. **Copier le fichier d'environnement** :
-
-```bash
-cp env.example .env
-```
-
-2. **Configurer les variables** :
-
-```bash
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017
-MONGODB_DATABASE=real_estate
-MONGODB_COLLECTION=properties
-
-# Centris
-CENTRIS_BASE_URL=https://www.centris.ca
-CENTRIS_USER_AGENT=Mozilla/5.0...
-
-# Pipeline
-MAX_WORKERS=4
-BATCH_SIZE=10
-REQUEST_TIMEOUT=30
-MAX_RETRIES=3
-RETRY_DELAY=1
-```
-
-3. **Configuration YAML** (`config/config.yml`) :
-
 ```yaml
+# config/config.yml
 database:
-  uri: ${MONGODB_URI}
-  database: ${MONGODB_DATABASE}
-  collection: ${MONGODB_COLLECTION}
+  host: localhost
+  port: 27017
+  name: realestate_analysis
+  collection: votre_collection
 
-centris:
-  base_url: ${CENTRIS_BASE_URL}
-  user_agent: ${CENTRIS_USER_AGENT}
-  locations_searched:
-    - type: "GeographicArea"
-      value: "Montérégie"
-      type_id: "RARA16"
-    - type: "CityDistrict"
-      value: "Vieux-Montréal"
-      type_id: 449
-  property_types: ["Plex", "SingleFamilyHome", "SellCondo"]
-  sale_price_min: 200000
-  sale_price_max: 260000
-
-pipeline:
-  max_workers: ${MAX_WORKERS}
-  batch_size: ${BATCH_SIZE}
-  request_timeout: ${REQUEST_TIMEOUT}
-  max_retries: ${MAX_RETRIES}
-  retry_delay: ${RETRY_DELAY}
-  log_level: "INFO"
+extraction:
+  max_properties: 100
+  delay_between_requests: 2
+  timeout: 30
 ```
 
-## 🎯 Utilisation
+## 🚀 **Utilisation**
 
-### **Test Principal : Chambly Plex**
+### **Test Rapide (Chambly)**
 
 ```bash
-# Test complet d'extraction de plex à Chambly
+# Test d'extraction réel avec stockage en base
 python run_chambly_test.py
 ```
 
-### **Exécution Simple**
+### **Pipeline Complet**
 
 ```bash
+# Exécution du pipeline principal
 python run.py
+
+# Avec paramètres personnalisés
+python scripts/run_pipeline.py --table votre_table --max 50
 ```
 
-### **Exécution avec Paramètres Personnalisés**
-
-```python
-from src.extractors.centris_extractor import CentrisExtractor
-from config.settings import config
-from src.models.property import SearchQuery, LocationConfig
-
-# Initialisation
-extractor = CentrisExtractor(config.centris)
-
-# Création d'une requête de recherche
-search_query = SearchQuery(
-    locations=[
-        LocationConfig(
-            type="GeographicArea",
-            value="Montérégie",
-            type_id="RARA16"
-        )
-    ],
-    property_types=["Plex"],
-    price_min=200000,
-    price_max=260000
-)
-
-# Extraction des résumés
-summaries = await extractor.extract_summaries(search_query)
-print(f"✅ {len(summaries)} propriétés trouvées")
-
-# Extraction des détails (optionnel)
-for summary in summaries[:3]:
-    details = await extractor.extract_details(summary.id)
-    print(f"🏠 {details.address.street} - {details.price}$")
-
-# Fermeture propre
-await extractor.close()
-```
-
-### **Types de Recherche Supportés**
-
-#### **GeographicArea (Régions)**
-
-```python
-LocationConfig(
-    type="GeographicArea",
-    value="Montérégie",
-    type_id="RARA16"
-)
-```
-
-#### **CityDistrict (Districts de ville)**
-
-```python
-LocationConfig(
-    type="CityDistrict",
-    value="Vieux-Montréal",
-    type_id: 449
-)
-```
-
-#### **Recherche Multiple**
-
-```python
-locations=[
-    LocationConfig(type="GeographicArea", value="Laurentides", type_id="RARA15"),
-    LocationConfig(type="CityDistrict", value="Plateau-Mont-Royal", type_id=450)
-]
-```
-
-## 🧪 Tests
-
-### **Exécution des Tests**
+### **Exemples d'Utilisation**
 
 ```bash
-# Tests de structure Centris
-python tests/test_centris_structure.py
+# Validation des données
+python examples/validation_example.py
 
-# Tests d'extraction réelle
-python tests/real_extraction_test.py
-
-# Tests d'intégration
-python tests/updated_integration_test.py
-
-# Tests de performance
-python tests/performance_test.py
-
-# Tests de robustesse
-python tests/robustness_test.py
-
-# Tous les tests d'intégration
-python tests/run_integration_tests.py
+# Exécution avec table personnalisée
+python examples/run_with_custom_table.py
 ```
 
-### **Test Principal : Chambly Plex**
+## 🧪 **Tests et Validation**
 
-```bash
-# Test d'extraction réelle de plex à Chambly
-python run_chambly_test.py
-```
+### **Tests d'Intégration**
 
-Ce test valide l'extraction complète avec :
+- **Test Chambly** : Extraction réelle de plex à Chambly
+- **Validation des données** : Vérification de la cohérence
+- **Tests de robustesse** : Gestion des erreurs et timeouts
 
-- ✅ Recherche de propriétés à Chambly
-- ✅ Extraction des résumés et détails
-- ✅ Sauvegarde en base MongoDB
-- ✅ Validation de la cohérence type/catégorie
-- ✅ Vérification de la qualité des données
+### **Validation des Données**
 
-### **Tests de Validation**
+- **Cohérence type/catégorie** : Vérification des règles métier
+- **Validation des adresses** : Format et géolocalisation
+- **Validation des prix** : Plages et cohérence
+- **Nettoyage des textes** : Suppression des caractères spéciaux
 
-```bash
-# Tests de performance
-python tests/performance_test.py
+## 📊 **Données Extraites**
 
-# Tests de robustesse
-python tests/robustness_test.py
+### **Informations de Base**
 
-# Tests d'intégration
-python tests/run_integration_tests.py
-```
+- ID, type, catégorie, statut
+- Prix, évaluations municipales, taxes
+- Adresse complète avec coordonnées GPS
 
-## 📊 Modèles de Données
+### **Caractéristiques Techniques**
 
-### **SearchQuery**
+- Dimensions du terrain et de la construction
+- Nombre de pièces, chambres, salles de bain
+- Année de construction, état du bâtiment
 
-```python
-class SearchQuery(BaseModel):
-    locations: List[LocationConfig]
-    property_types: List[PropertyType]
-    price_min: Optional[float] = None
-    price_max: Optional[float] = None
-```
+### **Informations Détaillées (Nouvelles)**
 
-### **LocationConfig**
+- **Utilisation** : Résidentielle, commerciale, etc.
+- **Style bâtiment** : Jumelé, détaché, etc.
+- **Stationnement** : Garage, allée, nombre de places
+- **Unités** : Nombre et détails des unités
+- **Walk Score** : Score de marcheabilité
+- **Date d'emménagement** : Selon les baux, etc.
 
-```python
-class LocationConfig(BaseModel):
-    type: str  # "GeographicArea" ou "CityDistrict"
-    value: str  # Nom de la localisation
-    type_id: Union[str, int]  # ID Centris (string pour GeographicArea, int pour CityDistrict)
-```
+## 🔧 **Maintenance et Développement**
 
-### **PropertySummary**
+### **Ajout de Nouveaux Champs**
 
-```python
-class PropertySummary(BaseModel):
-    id: str
-    address: Address
-    price: Optional[float]
-    type: PropertyType
-    image_url: Optional[str]
-    url: Optional[str]
-    source: str = "Centris"
-```
+1. Étendre le modèle `Property` dans `src/models/property.py`
+2. Implémenter l'extraction dans `DetailExtractor`
+3. Ajouter la validation dans `DataValidator`
+4. Mettre à jour les tests
 
-## 🔧 Configuration Avancée
+### **Support de Nouveaux Sites**
 
-### **Gestion des Timeouts**
+1. Créer un nouvel extracteur dans `src/extractors/`
+2. Implémenter l'interface d'extraction
+3. Adapter les modèles de données
+4. Ajouter les tests correspondants
 
-```yaml
-centris:
-  request_timeout: 30 # secondes
-  max_retries: 3
-  retry_delay: 1
-```
+## 📚 **Documentation Complète**
 
-### **Limitation des Ressources**
+- **📖 Architecture** : `docs/ARCHITECTURE.md`
+- **⚙️ Configuration** : `docs/CONFIGURATION.md`
+- **📊 Modèles de Données** : `docs/DATA_MODELS.md`
+- **🧪 Tests** : `docs/TESTING.md`
+- **🚀 Démarrage Rapide** : `docs/QUICKSTART.md`
+- **🏠 Test Chambly** : `docs/CHAMBLY_TEST_GUIDE.md`
 
-```yaml
-pipeline:
-  max_workers: 4 # Nombre de workers concurrents
-  batch_size: 10 # Taille des lots de traitement
-```
+## 🤝 **Contribution**
 
-### **Logging**
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Commit les changements (`git commit -m 'Add AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrir une Pull Request
 
-```yaml
-pipeline:
-  log_level: "INFO" # DEBUG, INFO, WARNING, ERROR
-  log_file: "logs/pipeline.log"
-  log_format: "json" # json ou text
-```
+## 📄 **Licence**
 
-## 📈 Performance
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
-### **Métriques Typiques**
+## 🆘 **Support**
 
-- **Extraction de résumés** : 8-20 propriétés par page
-- **Pagination** : Jusqu'à 7+ pages par recherche
-- **Débit** : 138+ propriétés en recherche multiple
-- **Temps de réponse** : 1-2 secondes par page
-
-### **Optimisations**
-
-- Gestion asynchrone des requêtes
-- Pool de workers configurable
-- Retry automatique avec backoff
-- Validation des données en streaming
-
-## 🚨 Gestion des Erreurs
-
-### **Types d'Erreurs Gérées**
-
-- ✅ Timeouts de requêtes
-- ✅ Erreurs réseau temporaires
-- ✅ Données HTML malformées
-- ✅ Limites de rate limiting
-- ✅ Erreurs de validation des données
-
-### **Stratégies de Récupération**
-
-- Retry automatique avec délai progressif
-- Fallback sur des sélecteurs alternatifs
-- Logging détaillé pour le débogage
-- Graceful degradation des fonctionnalités
-
-## 🔄 Workflow d'Extraction
-
-```
-1. 🔧 Initialisation
-   ├── Chargement de la configuration
-   ├── Création des composants
-   └── Validation des paramètres
-
-2. 🔍 Recherche
-   ├── Construction de la requête
-   ├── Appel à l'API Centris
-   └── Gestion de la pagination
-
-3. 📊 Extraction
-   ├── Parsing du HTML
-   ├── Extraction des résumés
-   └── Validation des données
-
-4. 💾 Sauvegarde
-   ├── Validation finale
-   ├── Sauvegarde MongoDB
-   └── Logging des résultats
-```
-
-## 📝 Logs et Monitoring
-
-### **Format des Logs**
-
-```json
-{
-  "timestamp": "2025-08-22T04:40:41.517661Z",
-  "level": "info",
-  "event": "🏠 Extraction réussie: 8 propriétés",
-  "search_query": "Montérégie - Plex",
-  "pages_processed": 1,
-  "properties_found": 8
-}
-```
-
-### **Niveaux de Log**
-
-- **DEBUG** : Détails techniques et débogage
-- **INFO** : Informations générales et métriques
-- **WARNING** : Avertissements non critiques
-- **ERROR** : Erreurs nécessitant une attention
-
-## 🤝 Contribution
-
-### **Structure du Code**
-
-- **Type hints** : Utilisation complète des annotations Python
-- **Docstrings** : Documentation claire de chaque fonction
-- **Tests** : Couverture complète des fonctionnalités
-- **Logging** : Traçabilité de toutes les opérations
-
-### **Standards de Code**
-
-- **PEP 8** : Style de code Python
-- **Black** : Formatage automatique
-- **isort** : Organisation des imports
-- **mypy** : Vérification des types
-
-## 📚 Ressources
-
-### **Documentation Centris**
-
-- [API Centris](https://www.centris.ca)
-- [Structure des données](docs/centris_structure.md)
-
-### **Technologies Utilisées**
-
-- **asyncio** : Programmation asynchrone
-- **Pydantic** : Validation des données
-- **BeautifulSoup** : Parsing HTML
-- **structlog** : Logging structuré
-- **pymongo** : Interface MongoDB
-
-## 🆘 Support
-
-### **Problèmes Courants**
-
-1. **Timeout des requêtes** : Augmenter `request_timeout`
-2. **Erreurs de validation** : Vérifier la configuration YAML
-3. **Problèmes de réseau** : Vérifier la connectivité et les proxies
-
-### **Débogage**
-
-- Activer le niveau de log `DEBUG`
-- Vérifier les logs dans `logs/`
-- Utiliser les scripts de test pour isoler les problèmes
+- **Issues** : Utiliser les GitHub Issues pour les bugs et demandes
+- **Documentation** : Consulter le dossier `docs/`
+- **Tests** : Exécuter `python run_chambly_test.py` pour validation
 
 ---
 
-## 🎉 Résumé
-
-Ce pipeline offre une solution robuste et maintenable pour l'extraction de données immobilières depuis Centris.ca. Avec son architecture modulaire, ses tests complets et sa documentation détaillée, il est prêt pour la production et l'évolution future.
-
-**🚀 Prêt à extraire des données immobilières à grande échelle !**
+**🎉 Pipeline 100% Fonctionnel - Prêt pour la Production !**
